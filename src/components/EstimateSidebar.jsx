@@ -1,34 +1,33 @@
+const logoVertical = "/estimateos-logo-vertical.png";
+
 function EstimateSidebar({ activePage, setActivePage }) {
   const pages = [
-    "Home",
-    "Estimate",
-    "Assemblies",
-    "Takeoff",
-    "Bid Leveling",
-    "Procurement",
-    "Reports",
-    "Settings",
-  ];
+  "Home",
+  "Estimate",
+  "Estimate Items",
+  "Assemblies",
+  "Labor Locations",
+  "Takeoff",
+  "Bid Leveling",
+  "Procurement",
+  "Reports",
+  "Settings",
+];
 
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-mark">E</span>
-
-        <div>
-          <strong>EstimateOS</strong>
-          <small>Preconstruction Engine</small>
-        </div>
+        <img
+          src={logoVertical}
+          alt="EstimateOS"
+          className="sidebar-logo"
+        />
       </div>
 
       {pages.map((page) => (
         <button
           key={page}
-          className={
-            activePage === page
-              ? "nav-btn active"
-              : "nav-btn"
-          }
+          className={activePage === page ? "nav-btn active" : "nav-btn"}
           onClick={() => setActivePage(page)}
         >
           {page}
