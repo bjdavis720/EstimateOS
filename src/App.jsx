@@ -13,6 +13,8 @@ import EstimateHome from "./pages/EstimateHome";
 import EstimateLineDrawer from "./components/EstimateLineDrawer";
 import EstimateItemsPage from "./pages/EstimateItemsPage";
 import LaborLocationsPage from "./pages/LaborLocationsPage";
+import WorkerTypesPage from "./pages/WorkerTypesPage";
+import CrewsPage from "./pages/CrewsPage";
 
 
 const blankLine = {
@@ -138,6 +140,52 @@ const starterLocations = [
     active: true,
   },
 ];
+const starterWorkerTypes = [
+  {
+    id: 1,
+    name: "Carpenter",
+    classification: "Journeyman",
+    trade: "Carpentry",
+    unit: "HR",
+    active: true,
+    notes: "",
+  },
+  {
+    id: 2,
+    name: "Laborer",
+    classification: "General",
+    trade: "Laborers",
+    unit: "HR",
+    active: true,
+    notes: "",
+  },
+  {
+    id: 3,
+    name: "Equipment Operator",
+    classification: "Skid Steer",
+    trade: "Operating Engineers",
+    unit: "HR",
+    active: true,
+    notes: "",
+  },
+];
+const starterCrews = [
+  {
+    id: 1,
+    name: "Concrete Form Crew",
+    trade: "Concrete",
+    unit: "HR",
+    locationId: 1,
+    effectiveDate: new Date().toISOString().slice(0, 10),
+    productionRate: 0,
+    productionUnit: "LF/HR",
+    shiftHours: 8,
+    availableCrewCount: 1,
+    members: [],
+    notes: "",
+    active: true,
+  },
+];
 function App() {
   const [activePage, setActivePage] = useState("Estimate");
   const [selectedLine, setSelectedLine] = useState(null);
@@ -154,6 +202,14 @@ function App() {
   const [costItems, setCostItems] = useState(() => {
   const saved = localStorage.getItem("estimateos_cost_items");
   return saved ? JSON.parse(saved) : starterCostItems;
+});
+const [workerTypes, setWorkerTypes] = useState(() => {
+  const saved = localStorage.getItem("estimateos_worker_types");
+  return saved ? JSON.parse(saved) : starterWorkerTypes;
+});
+const [crews, setCrews] = useState(() => {
+  const saved = localStorage.getItem("estimateos_crews");
+  return saved ? JSON.parse(saved) : starterCrews;
 });
 
 const [estimateLines, setEstimateLines] = useState(() => {
@@ -223,6 +279,18 @@ useEffect(() => {
     JSON.stringify(locations)
   );
 }, [locations]);
+useEffect(() => {
+  localStorage.setItem(
+    "estimateos_worker_types",
+    JSON.stringify(workerTypes)
+  );
+}, [workerTypes]);
+useEffect(() => {
+  localStorage.setItem(
+    "estimateos_crews",
+    JSON.stringify(crews)
+  );
+}, [crews]);
 
   function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -582,6 +650,23 @@ function updateAssemblyBuildUp(id, buildUpKey, field, value) {
     <LaborLocationsPage
       locations={locations}
       setLocations={setLocations}
+    />
+  );
+if (activePage === "Trade Person Types")
+  return (
+    <WorkerTypesPage
+      workerTypes={workerTypes}
+      setWorkerTypes={setWorkerTypes}
+      locations={locations}
+    />
+  );
+  if (activePage === "Crews")
+  return (
+    <CrewsPage
+      crews={crews}
+      setCrews={setCrews}
+      workerTypes={workerTypes}
+      locations={locations}
     />
   );
 

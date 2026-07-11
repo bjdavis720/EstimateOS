@@ -481,3 +481,154 @@ button {
 .labor-locations-table {
   min-width: 1250px;
 }
+.worker-types-table {
+  min-width: 950px;
+}
+.workspace-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.workspace-section-header h3 {
+  margin: 0;
+}
+
+.workspace-section-header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
+.rate-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rate-build-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px;
+  background: #f9fafb;
+}
+
+.rate-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.rate-card-header strong {
+  display: block;
+  font-size: 18px;
+}
+
+.rate-card-header span {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.rate-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #111827;
+  color: white;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 18px 0;
+}
+
+.rate-summary span {
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.rate-summary strong {
+  color: #f59e0b;
+  font-size: 24px;
+}
+
+.rate-notes {
+  min-height: 90px;
+}
+.rate-mode-select{
+    width:100%;
+    height:40px;
+    padding:0 12px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    background:white;
+    font-size:14px;
+    box-sizing:border-box;
+}
+.crews-table {
+  min-width: 1200px;
+}
+
+.crew-members-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 950px;
+}
+
+.crew-members-table th,
+.crew-members-table td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px;
+  text-align: left;
+}
+
+.crew-members-table th {
+  background: #f9fafb;
+  color: #374151;
+  font-size: 12px;
+}
+
+.crew-members-table input,
+.crew-members-table select {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-sizing: border-box;
+  background: white;
+}
+
+.crew-summary-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.crew-summary-card {
+  flex: 1;
+  min-width: 220px;
+  padding: 18px;
+  background: #111827;
+  color: white;
+  border-radius: 12px;
+}
+
+.crew-summary-card span {
+  display: block;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.crew-summary-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #f59e0b;
+  font-size: 24px;
+}

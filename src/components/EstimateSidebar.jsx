@@ -1,12 +1,14 @@
 const logoVertical = "/estimateos-logo-vertical.png";
 
 function EstimateSidebar({ activePage, setActivePage }) {
-  const pages = [
+const pages = [
   "Home",
   "Estimate",
   "Estimate Items",
   "Assemblies",
   "Labor Locations",
+  "Trade Person Types",
+  "Crews",
   "Takeoff",
   "Bid Leveling",
   "Procurement",
