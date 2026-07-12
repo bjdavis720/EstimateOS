@@ -1,4 +1,9 @@
 import { useState } from "react";
+import {
+  calculateEquipmentResourceRate,
+  calculateLaborResourceRate,
+  getApplicableResourceRate as getApplicableRate,
+} from "../calculations/crewCalculations";
 
 function EstimateLineDrawer({
   selectedLine,
@@ -40,102 +45,7 @@ function EstimateLineDrawer({
     }
   }
 
-  function calculateRateComponent(
-    baseWage,
-    value,
-    rateMode
-  ) {
-    const numericBaseWage = Number(
-      baseWage || 0
-    );
 
-    const numericValue = Number(value || 0);
-
-    if (rateMode === "Percent") {
-      return (
-        numericBaseWage *
-        (numericValue / 100)
-      );
-    }
-
-    return numericValue;
-  }
-
-  function calculateLaborResourceRate(rate) {
-    if (!rate) return 0;
-
-    const baseWage = Number(
-      rate.baseWage || 0
-    );
-
-    return (
-      baseWage +
-      calculateRateComponent(
-        baseWage,
-        rate.fringeBenefits,
-        rate.fringeBenefitsMode || "Dollars"
-      ) +
-      calculateRateComponent(
-        baseWage,
-        rate.payrollTaxes,
-        rate.payrollTaxesMode || "Percent"
-      ) +
-      calculateRateComponent(
-        baseWage,
-        rate.workersComp,
-        rate.workersCompMode || "Percent"
-      ) +
-      calculateRateComponent(
-        baseWage,
-        rate.insuranceBurden,
-        rate.insuranceBurdenMode || "Percent"
-      ) +
-      calculateRateComponent(
-        baseWage,
-        rate.otherBurden,
-        rate.otherBurdenMode || "Percent"
-      )
-    );
-  }
-
-  function calculateEquipmentResourceRate(rate) {
-    if (!rate) return 0;
-
-    const directOperatingCost =
-      Number(rate.ownershipCost || 0) +
-      Number(rate.fuelCost || 0) +
-      Number(rate.maintenanceCost || 0) +
-      Number(rate.otherOperatingCost || 0);
-
-    return (
-      directOperatingCost *
-      (1 +
-        Number(rate.markupPercent || 0) /
-          100)
-    );
-  }
-
-  function getApplicableRate(resource, crew) {
-    return (
-      (resource.rates || [])
-        .filter(
-          (rate) =>
-            String(rate.locationId) ===
-              String(crew.locationId) &&
-            (!crew.effectiveDate ||
-              !rate.effectiveDate ||
-              rate.effectiveDate <=
-                crew.effectiveDate)
-        )
-        .sort((a, b) =>
-          String(
-            b.effectiveDate || ""
-          ).localeCompare(
-            String(a.effectiveDate || "")
-          )
-        )[0] || null
-    );
-  }
 
   function getCrewDisplaySummary(crew) {
     if (!crew) {

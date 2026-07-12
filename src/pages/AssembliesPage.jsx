@@ -46,26 +46,17 @@ function AssembliesPage({
     );
   }, [crews, selectedAssembly]);
 
-  const crewSummary = useMemo(() => {
-    if (!selectedAssembly?.crewId) {
-      return {
+const crewSummary =
+  selectedAssembly?.crewId
+    ? getCrewCostSummary(
+        selectedAssembly.crewId
+      )
+    : {
         crew: null,
         laborHourlyCost: 0,
         equipmentHourlyCost: 0,
         totalHourlyCost: 0,
       };
-    }
-
-    return getCrewCostSummary(
-      selectedAssembly.crewId
-    );
-  }, [
-    selectedAssembly?.crewId,
-    selectedAssembly?.modified,
-    crews,
-    resources,
-    getCrewCostSummary,
-  ]);
 
   function formatDate(value) {
     if (!value) return "-";

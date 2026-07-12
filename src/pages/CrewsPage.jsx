@@ -1,4 +1,9 @@
 import { useState } from "react";
+import {
+  calculateEquipmentResourceRate as calculateEquipmentRate,
+  calculateLaborResourceRate as calculateLaborRate,
+  getApplicableResourceRate as getApplicableRate,
+} from "../calculations/crewCalculations";
 
 function CrewsPage({
   crews,
@@ -134,16 +139,15 @@ function CrewsPage({
           if (member.id !== memberId) return member;
 
           if (field === "resourceId") {
-            const {
-              workerTypeId,
-              ...memberWithoutOldWorkerTypeId
-            } = member;
+  const updatedMember = {
+    ...member,
+    resourceId: value,
+  };
 
-            return {
-              ...memberWithoutOldWorkerTypeId,
-              resourceId: value,
-            };
-          }
+  delete updatedMember.workerTypeId;
+
+  return updatedMember;
+}
 
           return {
             ...member,
@@ -178,107 +182,7 @@ function CrewsPage({
     );
   }
 
-  function calculateRateComponent(
-    baseWage,
-    value,
-    mode
-  ) {
-    const numericBaseWage = Number(baseWage || 0);
-    const numericValue = Number(value || 0);
 
-    if (mode === "Percent") {
-      return numericBaseWage * (numericValue / 100);
-    }
-
-    return numericValue;
-  }
-
-  function calculateLaborRate(rate) {
-    if (!rate) return 0;
-
-    const baseWage = Number(rate.baseWage || 0);
-
-    return (
-      baseWage +
-      calculateRateComponent(
-        baseWage,
-        rate.fringeBenefits,
-        rate.fringeBenefitsMode || "Dollars"
-      ) +
-      calculateRateComponent(
-        baseWage,
-        rate.payrollTaxes,
-        rate.payrollTaxesMode || "Percent"
-      ) +
-      calculateRateComponent(
-        baseWage,
-        rate.workersComp,
-        rate.workersCompMode || "Percent"
-      ) +
-      calculateRateComponent(
-        baseWage,
-        rate.insuranceBurden,
-        rate.insuranceBurdenMode || "Percent"
-      ) +
-      calculateRateComponent(
-        baseWage,
-        rate.otherBurden,
-        rate.otherBurdenMode || "Percent"
-      )
-    );
-  }
-
-  function calculateEquipmentRate(rate) {
-    if (!rate) return 0;
-
-    const ownershipCost = Number(
-      rate.ownershipCost || 0
-    );
-
-    const fuelCost = Number(rate.fuelCost || 0);
-
-    const maintenanceCost = Number(
-      rate.maintenanceCost || 0
-    );
-
-    const otherOperatingCost = Number(
-      rate.otherOperatingCost || 0
-    );
-
-    const markupPercent = Number(
-      rate.markupPercent || 0
-    );
-
-    const directOperatingCost =
-      ownershipCost +
-      fuelCost +
-      maintenanceCost +
-      otherOperatingCost;
-
-    return (
-      directOperatingCost *
-      (1 + markupPercent / 100)
-    );
-  }
-
-  function getApplicableRate(resource, crew) {
-    const matchingRates = (resource.rates || [])
-      .filter(
-        (rate) =>
-          String(rate.locationId) ===
-            String(crew.locationId) &&
-          (!crew.effectiveDate ||
-            !rate.effectiveDate ||
-            rate.effectiveDate <= crew.effectiveDate)
-      )
-      .sort((a, b) =>
-        String(b.effectiveDate || "").localeCompare(
-          String(a.effectiveDate || "")
-        )
-      );
-
-    return matchingRates[0] || null;
-  }
 
   function getResourceRate(resource, crew) {
     const rate = getApplicableRate(resource, crew);
