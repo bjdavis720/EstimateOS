@@ -4,6 +4,9 @@ import {
   calculateLaborResourceRate as calculateLaborRate,
   getApplicableResourceRate as getApplicableRate,
 } from "../calculations/crewCalculations";
+import {
+  formatCurrency,
+} from "../utils/formatting";
 
 function CrewsPage({
   crews,
@@ -282,15 +285,6 @@ function CrewsPage({
     );
   }
 
-  function formatCurrency(value) {
-    return Number(value || 0).toLocaleString(
-      undefined,
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }
-    );
-  }
 
   function getResourceLabel(resource) {
     if (!resource) return "Unknown Resource";
@@ -385,15 +379,17 @@ function CrewsPage({
                   </td>
 
                   <td>
-                    $
                     {formatCurrency(
-                      summary.laborCost
-                    )}
-                    /HR
+  summary.laborCost,
+  {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }
+)}
+/HR
                   </td>
 
                   <td>
-                    $
                     {formatCurrency(
                       summary.equipmentCost
                     )}
@@ -402,12 +398,15 @@ function CrewsPage({
 
                   <td>
                     <strong>
-                      $
-                      {formatCurrency(
-                        summary.totalCrewCost
-                      )}
-                      /HR
-                    </strong>
+  {formatCurrency(
+    summary.totalCrewCost,
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  )}
+  /HR
+</strong>
                   </td>
 
                   <td>
@@ -807,20 +806,26 @@ function CrewsPage({
                               </td>
 
                               <td>
-                                $
-                                {formatCurrency(
-                                  hourlyRate
-                                )}
-                                /HR
-                              </td>
+  {formatCurrency(
+    hourlyRate,
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  )}
+  /HR
+</td>
 
                               <td>
-                                $
-                                {formatCurrency(
-                                  extended
-                                )}
-                                /HR
-                              </td>
+  {formatCurrency(
+    extended,
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  )}
+  /HR
+</td>
 
                               <td>
                                 {rate
@@ -873,7 +878,6 @@ function CrewsPage({
                       <span>Labor Cost</span>
 
                       <strong>
-                        $
                         {formatCurrency(
                           summary.laborCost
                         )}
@@ -885,8 +889,7 @@ function CrewsPage({
                       <span>Equipment Cost</span>
 
                       <strong>
-                        $
-                        {formatCurrency(
+                         {formatCurrency(
                           summary.equipmentCost
                         )}
                         /HR
@@ -897,7 +900,6 @@ function CrewsPage({
                       <span>Total Crew Cost</span>
 
                       <strong>
-                        $
                         {formatCurrency(
                           summary.totalCrewCost
                         )}
@@ -1034,19 +1036,21 @@ function CrewsPage({
                       </span>
 
                       <strong>
-                        $
-                        {formatCurrency(
-                          Number(
-                            selectedCrew.productionRate ||
-                              0
-                          ) > 0
-                            ? summary.totalCrewCost /
-                                Number(
-                                  selectedCrew.productionRate
-                                )
-                            : 0
-                        )}
-                      </strong>
+  {formatCurrency(
+    Number(
+      selectedCrew.productionRate || 0
+    ) > 0
+      ? summary.totalCrewCost /
+          Number(
+            selectedCrew.productionRate
+          )
+      : 0,
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  )}
+</strong>
                     </div>
                   </div>
                 </div>

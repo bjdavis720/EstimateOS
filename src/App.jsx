@@ -42,6 +42,10 @@ import {
   readStoredJson,
   writeStoredJson,
 } from "./storage/localStorage";
+import {
+  formatCurrency,
+  formatNumber,
+} from "./utils/formatting";
 
 const blankLine =
   createBlankEstimateLine();
@@ -335,9 +339,6 @@ useEffect(() => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [crews, resources]);
 
-  function formatNumber(value) {
-  return Number(value || 0).toLocaleString();
-}
 function addLine() {
   const newLine = {
     ...createBlankEstimateLine(),
@@ -928,9 +929,6 @@ function updateEquipmentBuildUp(
   const getLineTotal =
   getEstimateLineTotal;
 
-  function formatCurrency(value) {
-    return `$${Number(value || 0).toLocaleString()}`;
-  }
 
   const estimateTotal = estimateLines.reduce(
     (sum, line) => sum + getLineTotal(line),
