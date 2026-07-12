@@ -38,6 +38,10 @@ import {
   starterLocations,
   starterResources,
 } from "./data/starterData";
+import {
+  readStoredJson,
+  writeStoredJson,
+} from "./storage/localStorage";
 
 const blankLine =
   createBlankEstimateLine();
@@ -47,40 +51,34 @@ function App() {
   const [activePage, setActivePage] = useState("Estimate");
   const [selectedLine, setSelectedLine] = useState(null);
   const [selectedAssembly, setSelectedAssembly] = useState(null);
-  const [locations, setLocations] = useState(() => {
-  const saved = localStorage.getItem("estimateos_locations");
-  return saved ? JSON.parse(saved) : starterLocations;
-});
+  const [locations, setLocations] =
+  useState(() =>
+    readStoredJson(
+      "estimateos_locations",
+      starterLocations
+    )
+  );
 
   const [assemblies, setAssemblies] = useState(
   () => {
-    const saved = localStorage.getItem(
-      "estimateos_assemblies"
-    );
+    const storedAssemblies =
+  readStoredJson(
+    "estimateos_assemblies",
+    []
+  );
 
-    if (!saved) return [];
-
-    try {
-      const parsedAssemblies =
-        JSON.parse(saved);
-
-      return parsedAssemblies.map(
-        migrateLegacyAssembly
-      );
-    } catch (error) {
-      console.error(
-        "Unable to read EstimateOS assemblies:",
-        error
-      );
-
-      return [];
-    }
+return storedAssemblies.map(
+  migrateLegacyAssembly
+);
   }
 );
-  const [costItems, setCostItems] = useState(() => {
-  const saved = localStorage.getItem("estimateos_cost_items");
-  return saved ? JSON.parse(saved) : starterCostItems;
-});
+  const [costItems, setCostItems] =
+  useState(() =>
+    readStoredJson(
+      "estimateos_cost_items",
+      starterCostItems
+    )
+  );
 const [resources, setResources] = useState(() => {
   const savedResources = localStorage.getItem(
     "estimateos_resources"
@@ -198,37 +196,44 @@ const [estimateLines, setEstimateLines] = useState(() => {
 
   
 
-  useEffect(() => {
-    localStorage.setItem("estimateos_lines", JSON.stringify(estimateLines));
-  }, [estimateLines]);
-  useEffect(() => {
-  localStorage.setItem(
+useEffect(() => {
+  writeStoredJson(
+    "estimateos_lines",
+    estimateLines
+  );
+}, [estimateLines]);
+useEffect(() => {
+  writeStoredJson(
     "estimateos_assemblies",
-    JSON.stringify(assemblies)
+    assemblies
   );
 }, [assemblies]);
+
 useEffect(() => {
-  localStorage.setItem(
+  writeStoredJson(
     "estimateos_cost_items",
-    JSON.stringify(costItems)
+    costItems
   );
 }, [costItems]);
+
 useEffect(() => {
-  localStorage.setItem(
+  writeStoredJson(
     "estimateos_locations",
-    JSON.stringify(locations)
+    locations
   );
 }, [locations]);
+
 useEffect(() => {
-  localStorage.setItem(
+  writeStoredJson(
     "estimateos_resources",
-    JSON.stringify(resources)
+    resources
   );
 }, [resources]);
+
 useEffect(() => {
-  localStorage.setItem(
+  writeStoredJson(
     "estimateos_crews",
-    JSON.stringify(crews)
+    crews
   );
 }, [crews]);
     
