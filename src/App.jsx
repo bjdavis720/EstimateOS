@@ -27,338 +27,22 @@ import {
 import {
   calculateAssemblyTotals,
 } from "./calculations/assemblyCalculations";
+import {
+  createBlankAssembly,
+  createBlankEstimateLine,
+  migrateLegacyAssembly,
+} from "./data/recordFactories";
+import {
+  createStarterCrews,
+  starterCostItems,
+  starterLocations,
+  starterResources,
+} from "./data/starterData";
+
+const blankLine =
+  createBlankEstimateLine();
 
 
-const blankLine = {
-  description: "",
-  quantity: 0,
-  unit: "SF",
-  masterFormat: "",
-  uniformat: "",
-  system: "",
-  wbs1: "",
-  wbs2: "",
-  wbs3: "",
-  wbs4: "",
-  location1: "",
-  location2: "",
-  location3: "",
-  bidPackage: "",
-  trade: "",
-  costCode: "",
-  phase: "",
-  laborTotal: 0,
-  materialTotal: 0,
-  equipmentTotal: 0,
-  subcontractTotal: 0,
-  otherTotal: 0,
-
-  laborBuildUp: {
-  crewType: "",
-  crewRate: 0,
-  productionRate: 0,
-  productionUnit: "SF/day",
-  markupPercent: 0,
-},
-  materialBuildUp: {
-  materialDescription: "",
-  materialUnit: "CY",
-  conversionFactor: 0,
-  wastePercent: 0,
-  unitCost: 0,
-  taxPercent: 0,
-  markupPercent: 0,
-},
-equipmentBuildUp: {
-  equipmentDescription: "",
-  quantity: 1,
-  hours: 0,
-  hourlyRate: 0,
-  standbyHours: 0,
-  standbyRate: 0,
-  markupPercent: 0,
-},
-  subcontractBuildUp: [],
-  otherBuildUp: [],
-  subcontractorProposals: [],
-};
-const starterCostItems = [
-  {
-    id: 1,
-    description: "Fine grading / compaction labor",
-    category: "Labor",
-    unit: "HR",
-    trade: "Earthwork",
-    costCode: "312000",
-    defaultUnitCost: 85,
-    productivity: "",
-  },
-  {
-    id: 2,
-    description: "Skid steer / compact equipment",
-    category: "Equipment",
-    unit: "HR",
-    trade: "Earthwork",
-    costCode: "312000",
-    defaultUnitCost: 95,
-    productivity: "",
-  },
-  {
-    id: 3,
-    description: "Ready-mix concrete",
-    category: "Material",
-    unit: "CY",
-    trade: "Concrete",
-    costCode: "033000",
-    defaultUnitCost: 165,
-    productivity: "",
-  },
-];
-const starterLocations = [
-  {
-    id: 1,
-    name: "Raleigh, NC",
-    city: "Raleigh",
-    state: "NC",
-    county: "Wake",
-    zip: "",
-    region: "Southeast",
-    laborMarket: "Raleigh-Durham",
-    country: "USA",
-    active: true,
-  },
-  {
-    id: 2,
-    name: "Grand Portage, MN",
-    city: "Grand Portage",
-    state: "MN",
-    county: "Cook",
-    zip: "",
-    region: "Upper Midwest",
-    laborMarket: "Northeast Minnesota",
-    country: "USA",
-    active: true,
-  },
-  {
-    id: 3,
-    name: "Dunseith, ND",
-    city: "Dunseith",
-    state: "ND",
-    county: "Rolette",
-    zip: "",
-    region: "Upper Midwest",
-    laborMarket: "North Central North Dakota",
-    country: "USA",
-    active: true,
-  },
-];
-const starterResources = [
-  {
-    id: 1,
-    resourceType: "Labor",
-    name: "Carpenter",
-    classification: "Journeyman",
-    trade: "Carpentry",
-    unit: "HR",
-    active: true,
-    notes: "",
-  },
-  {
-    id: 2,
-    resourceType: "Labor",
-    name: "Laborer",
-    classification: "General",
-    trade: "Laborers",
-    unit: "HR",
-    active: true,
-    notes: "",
-  },
-  {
-    id: 3,
-    resourceType: "Labor",
-    name: "Equipment Operator",
-    classification: "Skid Steer",
-    trade: "Operating Engineers",
-    unit: "HR",
-    active: true,
-    notes: "",
-  },
-];
-const starterCrews = [
-  {
-    id: 1,
-    name: "Concrete Form Crew",
-    trade: "Concrete",
-    unit: "HR",
-    locationId: 1,
-    effectiveDate: new Date().toISOString().slice(0, 10),
-    productionRate: 0,
-    productionUnit: "LF/HR",
-    shiftHours: 8,
-    availableCrewCount: 1,
-    members: [],
-    notes: "",
-    active: true,
-  },
-];
-function createBlankAssembly() {
-  const timestamp = new Date().toISOString();
-
-  return {
-    id: Date.now(),
-    description: "New Assembly",
-    unit: "EA",
-
-    masterFormat: "",
-    uniformat: "",
-    system: "",
-    trade: "",
-    costCode: "",
-    bidPackage: "",
-    phase: "",
-
-    crewId: "",
-    crewMarkupPercent: 0,
-
-    productionRate: 0,
-    productionUnit: "EA/HR",
-
-    materials: [],
-    additionalEquipment: [],
-    subcontractItems: [],
-    otherItems: [],
-
-    laborCostPerUnit: 0,
-    materialCostPerUnit: 0,
-    equipmentCostPerUnit: 0,
-    subcontractCostPerUnit: 0,
-    otherCostPerUnit: 0,
-    totalCostPerUnit: 0,
-
-    created: timestamp,
-    modified: timestamp,
-  };
-}
-
-function migrateLegacyAssembly(assembly) {
-  const legacyMaterial =
-    assembly.materialBuildUp || {};
-
-  const legacyEquipment =
-    assembly.equipmentBuildUp || {};
-
-  const hasLegacyMaterial =
-    legacyMaterial.materialDescription ||
-    Number(legacyMaterial.unitCost || 0) !== 0 ||
-    Number(legacyMaterial.conversionFactor || 0) !==
-      0;
-
-  const hasLegacyEquipment =
-    legacyEquipment.equipmentDescription ||
-    Number(legacyEquipment.hourlyRate || 0) !== 0 ||
-    Number(legacyEquipment.hours || 0) !== 0;
-
-  const migratedMaterials =
-    Array.isArray(assembly.materials)
-      ? assembly.materials
-      : hasLegacyMaterial
-        ? [
-            {
-              id: Date.now() + 1,
-              description:
-                legacyMaterial.materialDescription ||
-                "",
-              unit:
-                legacyMaterial.materialUnit || "EA",
-              quantityPerUnit:
-                legacyMaterial.conversionFactor || 0,
-              wastePercent:
-                legacyMaterial.wastePercent || 0,
-              unitCost:
-                legacyMaterial.unitCost || 0,
-              taxPercent:
-                legacyMaterial.taxPercent || 0,
-              markupPercent:
-                legacyMaterial.markupPercent || 0,
-            },
-          ]
-        : [];
-
-  const migratedEquipment =
-    Array.isArray(assembly.additionalEquipment)
-      ? assembly.additionalEquipment
-      : hasLegacyEquipment
-        ? [
-            {
-              id: Date.now() + 2,
-              description:
-                legacyEquipment.equipmentDescription ||
-                "",
-              quantity:
-                legacyEquipment.quantity || 1,
-              hoursPerUnit:
-                legacyEquipment.hours || 0,
-              hourlyRate:
-                legacyEquipment.hourlyRate || 0,
-              standbyHoursPerUnit:
-                legacyEquipment.standbyHours || 0,
-              standbyRate:
-                legacyEquipment.standbyRate || 0,
-              markupPercent:
-                legacyEquipment.markupPercent || 0,
-            },
-          ]
-        : [];
-
-  return {
-    ...createBlankAssembly(),
-    ...assembly,
-
-    id: assembly.id || Date.now(),
-
-    crewId:
-      assembly.crewId ??
-      assembly.laborBuildUp?.crewId ??
-      "",
-
-    crewMarkupPercent:
-      assembly.crewMarkupPercent ??
-      assembly.laborBuildUp?.markupPercent ??
-      0,
-
-    productionRate:
-      assembly.productionRate ??
-      assembly.laborBuildUp?.productionRate ??
-      0,
-
-    productionUnit:
-      assembly.productionUnit ??
-      assembly.laborBuildUp?.productionUnit ??
-      "EA/HR",
-
-    materials: migratedMaterials,
-
-    additionalEquipment: migratedEquipment,
-
-    subcontractItems:
-      assembly.subcontractItems ||
-      assembly.subcontractBuildUp ||
-      [],
-
-    otherItems:
-      assembly.otherItems ||
-      assembly.otherBuildUp ||
-      [],
-
-    created:
-      assembly.created ||
-      new Date().toISOString(),
-
-    modified:
-      assembly.modified ||
-      new Date().toISOString(),
-  };
-}
 function App() {
   const [activePage, setActivePage] = useState("Estimate");
   const [selectedLine, setSelectedLine] = useState(null);
@@ -448,9 +132,9 @@ const [resources, setResources] = useState(() => {
 const [crews, setCrews] = useState(() => {
   const saved = localStorage.getItem("estimateos_crews");
 
-  const loadedCrews = saved
-    ? JSON.parse(saved)
-    : starterCrews;
+ const loadedCrews = saved
+  ? JSON.parse(saved)
+  : createStarterCrews();
 
   return loadedCrews.map((crew) => ({
     ...crew,
@@ -649,16 +333,31 @@ useEffect(() => {
   function formatNumber(value) {
   return Number(value || 0).toLocaleString();
 }
-  function addLine() {
-    setEstimateLines([...estimateLines, { ...blankLine, id: Date.now() }]);
-  }
-  function addAssembly() {
-  const newAssembly = createBlankAssembly();
+function addLine() {
+  const newLine = {
+    ...createBlankEstimateLine(),
+    id: Date.now(),
+  };
 
-  setAssemblies((currentAssemblies) => [
-    ...currentAssemblies,
-    newAssembly,
-  ]);
+  setEstimateLines(
+    (currentLines) => [
+      ...currentLines,
+      newLine,
+    ]
+  );
+
+  setSelectedLine(newLine);
+}
+function addAssembly() {
+  const newAssembly =
+    createBlankAssembly();
+
+  setAssemblies(
+    (currentAssemblies) => [
+      ...currentAssemblies,
+      newAssembly,
+    ]
+  );
 
   setSelectedAssembly(newAssembly);
 }
