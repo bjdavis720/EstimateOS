@@ -10,10 +10,9 @@ import ProcurementPage from "./pages/ProcurementPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
 import EstimateHome from "./pages/EstimateHome";
-import EstimateLineDrawer from "./components/EstimateLineDrawer";
 import EstimateItemsPage from "./pages/EstimateItemsPage";
 import LaborLocationsPage from "./pages/LaborLocationsPage";
-import WorkerTypesPage from "./pages/WorkerTypesPage";
+import ResourcesPage from "./pages/ResourcesPage";
 import CrewsPage from "./pages/CrewsPage";
 
 
@@ -140,9 +139,10 @@ const starterLocations = [
     active: true,
   },
 ];
-const starterWorkerTypes = [
+const starterResources = [
   {
     id: 1,
+    resourceType: "Labor",
     name: "Carpenter",
     classification: "Journeyman",
     trade: "Carpentry",
@@ -152,6 +152,7 @@ const starterWorkerTypes = [
   },
   {
     id: 2,
+    resourceType: "Labor",
     name: "Laborer",
     classification: "General",
     trade: "Laborers",
@@ -161,6 +162,7 @@ const starterWorkerTypes = [
   },
   {
     id: 3,
+    resourceType: "Labor",
     name: "Equipment Operator",
     classification: "Skid Steer",
     trade: "Operating Engineers",
@@ -186,6 +188,164 @@ const starterCrews = [
     active: true,
   },
 ];
+function createBlankAssembly() {
+  const timestamp = new Date().toISOString();
+
+  return {
+    id: Date.now(),
+    description: "New Assembly",
+    unit: "EA",
+
+    masterFormat: "",
+    uniformat: "",
+    system: "",
+    trade: "",
+    costCode: "",
+    bidPackage: "",
+    phase: "",
+
+    crewId: "",
+    crewMarkupPercent: 0,
+
+    productionRate: 0,
+    productionUnit: "EA/HR",
+
+    materials: [],
+    additionalEquipment: [],
+    subcontractItems: [],
+    otherItems: [],
+
+    laborCostPerUnit: 0,
+    materialCostPerUnit: 0,
+    equipmentCostPerUnit: 0,
+    subcontractCostPerUnit: 0,
+    otherCostPerUnit: 0,
+    totalCostPerUnit: 0,
+
+    created: timestamp,
+    modified: timestamp,
+  };
+}
+
+function migrateLegacyAssembly(assembly) {
+  const legacyMaterial =
+    assembly.materialBuildUp || {};
+
+  const legacyEquipment =
+    assembly.equipmentBuildUp || {};
+
+  const hasLegacyMaterial =
+    legacyMaterial.materialDescription ||
+    Number(legacyMaterial.unitCost || 0) !== 0 ||
+    Number(legacyMaterial.conversionFactor || 0) !==
+      0;
+
+  const hasLegacyEquipment =
+    legacyEquipment.equipmentDescription ||
+    Number(legacyEquipment.hourlyRate || 0) !== 0 ||
+    Number(legacyEquipment.hours || 0) !== 0;
+
+  const migratedMaterials =
+    Array.isArray(assembly.materials)
+      ? assembly.materials
+      : hasLegacyMaterial
+        ? [
+            {
+              id: Date.now() + 1,
+              description:
+                legacyMaterial.materialDescription ||
+                "",
+              unit:
+                legacyMaterial.materialUnit || "EA",
+              quantityPerUnit:
+                legacyMaterial.conversionFactor || 0,
+              wastePercent:
+                legacyMaterial.wastePercent || 0,
+              unitCost:
+                legacyMaterial.unitCost || 0,
+              taxPercent:
+                legacyMaterial.taxPercent || 0,
+              markupPercent:
+                legacyMaterial.markupPercent || 0,
+            },
+          ]
+        : [];
+
+  const migratedEquipment =
+    Array.isArray(assembly.additionalEquipment)
+      ? assembly.additionalEquipment
+      : hasLegacyEquipment
+        ? [
+            {
+              id: Date.now() + 2,
+              description:
+                legacyEquipment.equipmentDescription ||
+                "",
+              quantity:
+                legacyEquipment.quantity || 1,
+              hoursPerUnit:
+                legacyEquipment.hours || 0,
+              hourlyRate:
+                legacyEquipment.hourlyRate || 0,
+              standbyHoursPerUnit:
+                legacyEquipment.standbyHours || 0,
+              standbyRate:
+                legacyEquipment.standbyRate || 0,
+              markupPercent:
+                legacyEquipment.markupPercent || 0,
+            },
+          ]
+        : [];
+
+  return {
+    ...createBlankAssembly(),
+    ...assembly,
+
+    id: assembly.id || Date.now(),
+
+    crewId:
+      assembly.crewId ??
+      assembly.laborBuildUp?.crewId ??
+      "",
+
+    crewMarkupPercent:
+      assembly.crewMarkupPercent ??
+      assembly.laborBuildUp?.markupPercent ??
+      0,
+
+    productionRate:
+      assembly.productionRate ??
+      assembly.laborBuildUp?.productionRate ??
+      0,
+
+    productionUnit:
+      assembly.productionUnit ??
+      assembly.laborBuildUp?.productionUnit ??
+      "EA/HR",
+
+    materials: migratedMaterials,
+
+    additionalEquipment: migratedEquipment,
+
+    subcontractItems:
+      assembly.subcontractItems ||
+      assembly.subcontractBuildUp ||
+      [],
+
+    otherItems:
+      assembly.otherItems ||
+      assembly.otherBuildUp ||
+      [],
+
+    created:
+      assembly.created ||
+      new Date().toISOString(),
+
+    modified:
+      assembly.modified ||
+      new Date().toISOString(),
+  };
+}
 function App() {
   const [activePage, setActivePage] = useState("Estimate");
   const [selectedLine, setSelectedLine] = useState(null);
@@ -195,21 +355,104 @@ function App() {
   return saved ? JSON.parse(saved) : starterLocations;
 });
 
-  const [assemblies, setAssemblies] = useState(() => {
-    const saved = localStorage.getItem("estimateos_assemblies");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [assemblies, setAssemblies] = useState(
+  () => {
+    const saved = localStorage.getItem(
+      "estimateos_assemblies"
+    );
+
+    if (!saved) return [];
+
+    try {
+      const parsedAssemblies =
+        JSON.parse(saved);
+
+      return parsedAssemblies.map(
+        migrateLegacyAssembly
+      );
+    } catch (error) {
+      console.error(
+        "Unable to read EstimateOS assemblies:",
+        error
+      );
+
+      return [];
+    }
+  }
+);
   const [costItems, setCostItems] = useState(() => {
   const saved = localStorage.getItem("estimateos_cost_items");
   return saved ? JSON.parse(saved) : starterCostItems;
 });
-const [workerTypes, setWorkerTypes] = useState(() => {
-  const saved = localStorage.getItem("estimateos_worker_types");
-  return saved ? JSON.parse(saved) : starterWorkerTypes;
+const [resources, setResources] = useState(() => {
+  const savedResources = localStorage.getItem(
+    "estimateos_resources"
+  );
+
+  if (savedResources) {
+    try {
+      const parsedResources = JSON.parse(savedResources);
+
+      return parsedResources.map((resource) => ({
+        ...resource,
+        resourceType: resource.resourceType || "Labor",
+        rates: resource.rates || [],
+      }));
+    } catch (error) {
+      console.error(
+        "Unable to read EstimateOS resources:",
+        error
+      );
+    }
+  }
+
+  const savedWorkerTypes = localStorage.getItem(
+    "estimateos_worker_types"
+  );
+
+  if (savedWorkerTypes) {
+    try {
+      const parsedWorkerTypes = JSON.parse(savedWorkerTypes);
+
+      return parsedWorkerTypes.map((workerType) => ({
+        ...workerType,
+        resourceType: "Labor",
+        rates: workerType.rates || [],
+      }));
+    } catch (error) {
+      console.error(
+        "Unable to migrate EstimateOS worker types:",
+        error
+      );
+    }
+  }
+
+  return starterResources.map((resource) => ({
+    ...resource,
+    rates: resource.rates || [],
+  }));
 });
 const [crews, setCrews] = useState(() => {
   const saved = localStorage.getItem("estimateos_crews");
-  return saved ? JSON.parse(saved) : starterCrews;
+
+  const loadedCrews = saved
+    ? JSON.parse(saved)
+    : starterCrews;
+
+  return loadedCrews.map((crew) => ({
+    ...crew,
+
+    members: (crew.members || []).map((member) => ({
+      ...member,
+
+      // Migrate the old workerTypeId field without
+      // losing existing crew assignments.
+      resourceId:
+        member.resourceId ??
+        member.workerTypeId ??
+        "",
+    })),
+  }));
 });
 
 const [estimateLines, setEstimateLines] = useState(() => {
@@ -281,16 +524,117 @@ useEffect(() => {
 }, [locations]);
 useEffect(() => {
   localStorage.setItem(
-    "estimateos_worker_types",
-    JSON.stringify(workerTypes)
+    "estimateos_resources",
+    JSON.stringify(resources)
   );
-}, [workerTypes]);
+}, [resources]);
 useEffect(() => {
   localStorage.setItem(
     "estimateos_crews",
     JSON.stringify(crews)
   );
 }, [crews]);
+    
+useEffect(() => {
+  setAssemblies((currentAssemblies) => {
+    let changed = false;
+
+    const recalculatedAssemblies =
+      currentAssemblies.map((assembly) => {
+        const recalculated =
+          recalculateAssembly(assembly);
+
+        const assemblyChanged =
+          recalculated.laborCostPerUnit !==
+            assembly.laborCostPerUnit ||
+          recalculated.materialCostPerUnit !==
+            assembly.materialCostPerUnit ||
+          recalculated.equipmentCostPerUnit !==
+            assembly.equipmentCostPerUnit ||
+          recalculated.subcontractCostPerUnit !==
+            assembly.subcontractCostPerUnit ||
+          recalculated.otherCostPerUnit !==
+            assembly.otherCostPerUnit ||
+          recalculated.totalCostPerUnit !==
+            assembly.totalCostPerUnit ||
+          recalculated.productionRate !==
+            assembly.productionRate ||
+          recalculated.productionUnit !==
+            assembly.productionUnit ||
+          recalculated.crewLocationId !==
+            assembly.crewLocationId ||
+          recalculated.crewEffectiveDate !==
+            assembly.crewEffectiveDate;
+
+        if (assemblyChanged) {
+          changed = true;
+        }
+
+        return assemblyChanged
+          ? recalculated
+          : assembly;
+      });
+
+    return changed
+      ? recalculatedAssemblies
+      : currentAssemblies;
+  });
+}, [crews, resources]);
+
+useEffect(() => {
+  if (!selectedAssembly?.id) return;
+
+  const currentAssembly = assemblies.find(
+    (assembly) =>
+      String(assembly.id) ===
+      String(selectedAssembly.id)
+  );
+
+  if (
+    currentAssembly &&
+    currentAssembly !== selectedAssembly
+  ) {
+    setSelectedAssembly(currentAssembly);
+  }
+}, [assemblies, selectedAssembly?.id]);
+useEffect(() => {
+  setEstimateLines((currentLines) => {
+    let changed = false;
+
+    const recalculatedLines =
+      currentLines.map((line) => {
+        if (!line.laborBuildUp?.crewId) {
+          return line;
+        }
+
+        const recalculated =
+          recalculateCrewDrivenLine(line);
+
+        const lineChanged =
+          recalculated.laborTotal !==
+            line.laborTotal ||
+          recalculated.equipmentTotal !==
+            line.equipmentTotal ||
+          recalculated.laborBuildUp?.crewRate !==
+            line.laborBuildUp?.crewRate ||
+          recalculated.laborBuildUp
+            ?.productionRate !==
+            line.laborBuildUp?.productionRate;
+
+        if (lineChanged) {
+          changed = true;
+        }
+
+        return lineChanged
+          ? recalculated
+          : line;
+      });
+
+    return changed
+      ? recalculatedLines
+      : currentLines;
+  });
+}, [crews, resources]);
 
   function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -299,94 +643,590 @@ useEffect(() => {
     setEstimateLines([...estimateLines, { ...blankLine, id: Date.now() }]);
   }
   function addAssembly() {
-  const assembly = {
-    ...blankLine,
-    id: Date.now(),
-    description: "New Assembly",
-    created: new Date().toISOString(),
-    modified: new Date().toISOString(),
-  };
+  const newAssembly = createBlankAssembly();
 
-  setAssemblies([...assemblies, assembly]);
+  setAssemblies((currentAssemblies) => [
+    ...currentAssemblies,
+    newAssembly,
+  ]);
+
+  setSelectedAssembly(newAssembly);
 }
-function updateAssembly(id, field, value) {
-  setAssemblies(
-    assemblies.map((assembly) =>
-      assembly.id === id
-        ? {
-            ...assembly,
-            [field]: value,
-            modified: new Date().toISOString(),
-          }
-        : assembly
+
+function updateAssemblyRecord(id, updates) {
+  setAssemblies((currentAssemblies) => {
+    const updatedAssemblies =
+      currentAssemblies.map((assembly) => {
+        if (
+          String(assembly.id) !== String(id)
+        ) {
+          return assembly;
+        }
+
+        const updatedAssembly = {
+          ...assembly,
+          ...updates,
+          modified: new Date().toISOString(),
+        };
+
+        return recalculateAssembly(
+          updatedAssembly
+        );
+      });
+
+    return updatedAssemblies;
+  });
+}
+
+function deleteAssembly(id) {
+  setAssemblies((currentAssemblies) =>
+    currentAssemblies.filter(
+      (assembly) =>
+        String(assembly.id) !== String(id)
     )
   );
-}
-function updateSelectedAssembly(id, field, value) {
-  const updatedAssemblies = assemblies.map((assembly) =>
-    assembly.id === id
-      ? {
-          ...assembly,
-          [field]:
-            field.includes("Total") || field === "quantity"
-              ? Number(value)
-              : value,
-          modified: new Date().toISOString(),
-        }
-      : assembly
-  );
 
-  setAssemblies(updatedAssemblies);
+  if (
+    String(selectedAssembly?.id) ===
+    String(id)
+  ) {
+    setSelectedAssembly(null);
+  }
+}
 
-  const updatedAssembly = updatedAssemblies.find((a) => a.id === id);
-  if (updatedAssembly) setSelectedAssembly(updatedAssembly);
-}
-function deleteAssembly(id) {
-  setAssemblies(
-    assemblies.filter((assembly) => assembly.id !== id)
-  );
-}
 function duplicateAssembly(id) {
-  const original = assemblies.find((a) => a.id === id);
+  const original = assemblies.find(
+    (assembly) =>
+      String(assembly.id) === String(id)
+  );
 
   if (!original) return;
+
+  const timestamp = new Date().toISOString();
 
   const copy = {
     ...structuredClone(original),
     id: Date.now(),
     description: `${original.description} Copy`,
-    created: new Date().toISOString(),
-    modified: new Date().toISOString(),
+    created: timestamp,
+    modified: timestamp,
+
+    materials: (
+      original.materials || []
+    ).map((item, index) => ({
+      ...item,
+      id: Date.now() + index + 1,
+    })),
+
+    additionalEquipment: (
+      original.additionalEquipment || []
+    ).map((item, index) => ({
+      ...item,
+      id: Date.now() + index + 100,
+    })),
+
+    subcontractItems: (
+      original.subcontractItems || []
+    ).map((item, index) => ({
+      ...item,
+      id: Date.now() + index + 200,
+    })),
+
+    otherItems: (
+      original.otherItems || []
+    ).map((item, index) => ({
+      ...item,
+      id: Date.now() + index + 300,
+    })),
   };
 
-  setAssemblies([...assemblies, copy]);
+  setAssemblies((currentAssemblies) => [
+    ...currentAssemblies,
+    copy,
+  ]);
+
+  setSelectedAssembly(copy);
 }
 
-  function updateLine(id, field, value) {
-    setEstimateLines(
-      estimateLines.map((line) =>
-        line.id === id
-          ? {
-              ...line,
-              [field]:
-                field.includes("Total") || field === "quantity"
-                  ? Number(value)
-                  : value,
-            }
-          : line
+function updateLine(id, field, value) {
+  setEstimateLines((currentLines) => {
+    const updatedLines = currentLines.map((line) => {
+      if (line.id !== id) return line;
+
+      const updatedLine = {
+        ...line,
+
+        [field]:
+          field.includes("Total") ||
+          field === "quantity"
+            ? Number(value)
+            : value,
+      };
+
+      if (
+        field === "quantity" &&
+        updatedLine.laborBuildUp?.crewId
+      ) {
+        return recalculateCrewDrivenLine(
+          updatedLine
+        );
+      }
+
+      return updatedLine;
+    });
+
+    const updatedSelectedLine =
+      updatedLines.find((line) => line.id === id);
+
+    if (updatedSelectedLine) {
+      setSelectedLine(updatedSelectedLine);
+    }
+
+    return updatedLines;
+  });
+}
+  function calculateRateComponent(baseWage, value, mode) {
+  const numericBaseWage = Number(baseWage || 0);
+  const numericValue = Number(value || 0);
+
+  if (mode === "Percent") {
+    return numericBaseWage * (numericValue / 100);
+  }
+
+  return numericValue;
+}
+
+function calculateLaborResourceRate(rate) {
+  if (!rate) return 0;
+
+  const baseWage = Number(rate.baseWage || 0);
+
+  return (
+    baseWage +
+    calculateRateComponent(
+      baseWage,
+      rate.fringeBenefits,
+      rate.fringeBenefitsMode || "Dollars"
+    ) +
+    calculateRateComponent(
+      baseWage,
+      rate.payrollTaxes,
+      rate.payrollTaxesMode || "Percent"
+    ) +
+    calculateRateComponent(
+      baseWage,
+      rate.workersComp,
+      rate.workersCompMode || "Percent"
+    ) +
+    calculateRateComponent(
+      baseWage,
+      rate.insuranceBurden,
+      rate.insuranceBurdenMode || "Percent"
+    ) +
+    calculateRateComponent(
+      baseWage,
+      rate.otherBurden,
+      rate.otherBurdenMode || "Percent"
+    )
+  );
+}
+
+function calculateEquipmentResourceRate(rate) {
+  if (!rate) return 0;
+
+  const directOperatingCost =
+    Number(rate.ownershipCost || 0) +
+    Number(rate.fuelCost || 0) +
+    Number(rate.maintenanceCost || 0) +
+    Number(rate.otherOperatingCost || 0);
+
+  const markupPercent = Number(
+    rate.markupPercent || 0
+  );
+
+  return (
+    directOperatingCost *
+    (1 + markupPercent / 100)
+  );
+}
+
+function getApplicableResourceRate(resource, crew) {
+  const matchingRates = (resource.rates || [])
+    .filter(
+      (rate) =>
+        String(rate.locationId) ===
+          String(crew.locationId) &&
+        (!crew.effectiveDate ||
+          !rate.effectiveDate ||
+          rate.effectiveDate <= crew.effectiveDate)
+    )
+    .sort((a, b) =>
+      String(b.effectiveDate || "").localeCompare(
+        String(a.effectiveDate || "")
       )
     );
 
-    if (selectedLine?.id === id) {
-      setSelectedLine({
-        ...selectedLine,
-        [field]:
-          field.includes("Total") || field === "quantity"
-            ? Number(value)
-            : value,
-      });
-    }
+  return matchingRates[0] || null;
+}
+
+function getCrewCostSummary(crewId) {
+  const crew = crews.find(
+    (item) => String(item.id) === String(crewId)
+  );
+
+  if (!crew) {
+    return {
+      crew: null,
+      laborHourlyCost: 0,
+      equipmentHourlyCost: 0,
+      totalHourlyCost: 0,
+    };
   }
+
+  const summary = (crew.members || []).reduce(
+    (totals, member) => {
+      const resourceId =
+        member.resourceId ??
+        member.workerTypeId ??
+        "";
+
+      const resource = resources.find(
+        (item) =>
+          String(item.id) === String(resourceId)
+      );
+
+      if (!resource) return totals;
+
+      const rate = getApplicableResourceRate(
+        resource,
+        crew
+      );
+
+      const resourceType =
+        resource.resourceType || "Labor";
+
+      const hourlyRate =
+        resourceType === "Equipment"
+          ? calculateEquipmentResourceRate(rate)
+          : calculateLaborResourceRate(rate);
+
+      const extendedRate =
+        hourlyRate * Number(member.quantity || 0);
+
+      return {
+        laborHourlyCost:
+          totals.laborHourlyCost +
+          (resourceType === "Labor"
+            ? extendedRate
+            : 0),
+
+        equipmentHourlyCost:
+          totals.equipmentHourlyCost +
+          (resourceType === "Equipment"
+            ? extendedRate
+            : 0),
+      };
+    },
+    {
+      laborHourlyCost: 0,
+      equipmentHourlyCost: 0,
+    }
+  );
+
+  return {
+    crew,
+    ...summary,
+    totalHourlyCost:
+      summary.laborHourlyCost +
+      summary.equipmentHourlyCost,
+  };
+}
+function calculateMaterialCostPerUnit(item) {
+  const quantityPerUnit = Number(
+    item.quantityPerUnit || 0
+  );
+
+  const wasteFactor =
+    1 + Number(item.wastePercent || 0) / 100;
+
+  const taxFactor =
+    1 + Number(item.taxPercent || 0) / 100;
+
+  const markupFactor =
+    1 + Number(item.markupPercent || 0) / 100;
+
+  return (
+    quantityPerUnit *
+    wasteFactor *
+    Number(item.unitCost || 0) *
+    taxFactor *
+    markupFactor
+  );
+}
+
+function calculateAdditionalEquipmentCostPerUnit(
+  item
+) {
+  const quantity = Number(item.quantity || 0);
+
+  const operatingCost =
+    quantity *
+    Number(item.hoursPerUnit || 0) *
+    Number(item.hourlyRate || 0);
+
+  const standbyCost =
+    quantity *
+    Number(item.standbyHoursPerUnit || 0) *
+    Number(item.standbyRate || 0);
+
+  const markupFactor =
+    1 + Number(item.markupPercent || 0) / 100;
+
+  return (
+    operatingCost + standbyCost
+  ) * markupFactor;
+}
+
+function calculateSimpleItemCostPerUnit(item) {
+  const quantityPerUnit = Number(
+    item.quantityPerUnit || 0
+  );
+
+  const unitCost = Number(
+    item.unitCost || 0
+  );
+
+  const markupFactor =
+    1 + Number(item.markupPercent || 0) / 100;
+
+  return (
+    quantityPerUnit *
+    unitCost *
+    markupFactor
+  );
+}
+
+function recalculateAssembly(assembly) {
+  const {
+    crew,
+    laborHourlyCost,
+    equipmentHourlyCost,
+  } = getCrewCostSummary(
+    assembly.crewId
+  );
+
+  const productionRate = Number(
+    crew?.productionRate ||
+      assembly.productionRate ||
+      0
+  );
+
+  const crewMarkupFactor =
+    1 +
+    Number(
+      assembly.crewMarkupPercent || 0
+    ) /
+      100;
+
+  const laborCostPerUnit =
+    productionRate > 0
+      ? (laborHourlyCost /
+          productionRate) *
+        crewMarkupFactor
+      : 0;
+
+  const crewEquipmentCostPerUnit =
+    productionRate > 0
+      ? (equipmentHourlyCost /
+          productionRate) *
+        crewMarkupFactor
+      : 0;
+
+  const materialCostPerUnit = (
+    assembly.materials || []
+  ).reduce(
+    (total, item) =>
+      total +
+      calculateMaterialCostPerUnit(item),
+    0
+  );
+
+  const additionalEquipmentCostPerUnit = (
+    assembly.additionalEquipment || []
+  ).reduce(
+    (total, item) =>
+      total +
+      calculateAdditionalEquipmentCostPerUnit(
+        item
+      ),
+    0
+  );
+
+  const subcontractCostPerUnit = (
+    assembly.subcontractItems || []
+  ).reduce(
+    (total, item) =>
+      total +
+      calculateSimpleItemCostPerUnit(item),
+    0
+  );
+
+  const otherCostPerUnit = (
+    assembly.otherItems || []
+  ).reduce(
+    (total, item) =>
+      total +
+      calculateSimpleItemCostPerUnit(item),
+    0
+  );
+
+  const equipmentCostPerUnit =
+    crewEquipmentCostPerUnit +
+    additionalEquipmentCostPerUnit;
+
+  const totalCostPerUnit =
+    laborCostPerUnit +
+    materialCostPerUnit +
+    equipmentCostPerUnit +
+    subcontractCostPerUnit +
+    otherCostPerUnit;
+
+  return {
+    ...assembly,
+
+    productionRate,
+    productionUnit:
+      crew?.productionUnit ||
+      assembly.productionUnit ||
+      "EA/HR",
+
+    crewLocationId:
+      crew?.locationId || "",
+
+    crewEffectiveDate:
+      crew?.effectiveDate || "",
+
+    laborCostPerUnit,
+    materialCostPerUnit,
+    equipmentCostPerUnit,
+    subcontractCostPerUnit,
+    otherCostPerUnit,
+    totalCostPerUnit,
+  };
+}
+
+function recalculateCrewDrivenLine(line) {
+  const crewId = line.laborBuildUp?.crewId;
+
+  const previousCrewEquipmentTotal = Number(
+    line.crewEquipmentTotal || 0
+  );
+
+  const directEquipmentTotal =
+    line.equipmentBuildUp?.calculatedTotal !==
+    undefined
+      ? Number(
+          line.equipmentBuildUp.calculatedTotal || 0
+        )
+      : Math.max(
+          0,
+          Number(line.equipmentTotal || 0) -
+            previousCrewEquipmentTotal
+        );
+
+  if (!crewId) {
+    return {
+      ...line,
+
+      laborBuildUp: {
+        ...(line.laborBuildUp || {}),
+        crewId: "",
+        crewType: "",
+        crewRate: 0,
+      },
+
+      crewLaborTotal: 0,
+      crewEquipmentTotal: 0,
+      laborTotal: 0,
+      equipmentTotal: directEquipmentTotal,
+
+      equipmentBuildUp: {
+        ...(line.equipmentBuildUp || {}),
+        calculatedTotal: directEquipmentTotal,
+      },
+    };
+  }
+
+  const {
+    crew,
+    laborHourlyCost,
+    equipmentHourlyCost,
+    totalHourlyCost,
+  } = getCrewCostSummary(crewId);
+
+  if (!crew) return line;
+
+  const quantity = Number(line.quantity || 0);
+
+  const productionRate = Number(
+    crew.productionRate || 0
+  );
+
+  const crewHours =
+    productionRate > 0
+      ? quantity / productionRate
+      : 0;
+
+  const markupPercent = Number(
+    line.laborBuildUp?.markupPercent || 0
+  );
+
+  const markupFactor =
+    1 + markupPercent / 100;
+
+  const crewLaborTotal =
+    crewHours * laborHourlyCost * markupFactor;
+
+  const crewEquipmentTotal =
+    crewHours * equipmentHourlyCost * markupFactor;
+
+  return {
+    ...line,
+
+    laborBuildUp: {
+      ...(line.laborBuildUp || {}),
+
+      crewId: crew.id,
+      crewType: crew.name,
+      crewRate: totalHourlyCost,
+
+      productionRate,
+      productionUnit:
+        crew.productionUnit || "EA/HR",
+
+      crewLocationId: crew.locationId || "",
+      crewEffectiveDate: crew.effectiveDate || "",
+    },
+
+    crewLaborTotal: Math.round(crewLaborTotal),
+
+    crewEquipmentTotal: Math.round(
+      crewEquipmentTotal
+    ),
+
+    laborTotal: Math.round(crewLaborTotal),
+
+    equipmentBuildUp: {
+      ...(line.equipmentBuildUp || {}),
+      calculatedTotal: directEquipmentTotal,
+    },
+
+    equipmentTotal: Math.round(
+      directEquipmentTotal +
+        crewEquipmentTotal
+    ),
+  };
+}
 function updateLaborBuildUp(id, field, value) {
   setEstimateLines(
     estimateLines.map((line) => {
@@ -409,11 +1249,22 @@ function updateLaborBuildUp(id, field, value) {
       const baseLabor = hours * crewRate;
       const laborTotal = baseLabor * (1 + markupPercent / 100);
 
-      const updatedLine = {
-        ...line,
-        laborBuildUp: updatedLaborBuildUp,
-        laborTotal: Math.round(laborTotal),
-      };
+      const crewEquipmentTotal = Number(
+  line.crewEquipmentTotal || 0
+);
+
+const updatedLine = {
+  ...line,
+
+  equipmentBuildUp: {
+    ...updatedEquipmentBuildUp,
+    calculatedTotal: Math.round(equipmentTotal),
+  },
+
+  equipmentTotal: Math.round(
+    equipmentTotal + crewEquipmentTotal
+  ),
+};
 
       if (selectedLine?.id === id) {
         setSelectedLine(updatedLine);
@@ -422,6 +1273,37 @@ function updateLaborBuildUp(id, field, value) {
       return updatedLine;
     })
   );
+}
+function updateCrewLaborBuildUp(id, field, value) {
+  setEstimateLines((currentLines) => {
+    const updatedLines = currentLines.map((line) => {
+      if (line.id !== id) return line;
+
+      const updatedLine = {
+        ...line,
+
+        laborBuildUp: {
+          ...(line.laborBuildUp || {}),
+
+          [field]:
+            field === "markupPercent"
+              ? Number(value)
+              : value,
+        },
+      };
+
+      return recalculateCrewDrivenLine(updatedLine);
+    });
+
+    const updatedSelectedLine =
+      updatedLines.find((line) => line.id === id);
+
+    if (updatedSelectedLine) {
+      setSelectedLine(updatedSelectedLine);
+    }
+
+    return updatedLines;
+  });
 }
 
 function updateMaterialBuildUp(id, field, value) {
@@ -517,90 +1399,7 @@ function updateEquipmentBuildUp(id, field, value) {
     })
   );
 }
-function updateAssemblyLaborBuildUp(id, field, value) {
-  updateAssemblyBuildUp(id, "laborBuildUp", field, value);
-}
 
-function updateAssemblyMaterialBuildUp(id, field, value) {
-  updateAssemblyBuildUp(id, "materialBuildUp", field, value);
-}
-
-function updateAssemblyEquipmentBuildUp(id, field, value) {
-  updateAssemblyBuildUp(id, "equipmentBuildUp", field, value);
-}
-
-function updateAssemblyBuildUp(id, buildUpKey, field, value) {
-  const updatedAssemblies = assemblies.map((assembly) => {
-    if (assembly.id !== id) return assembly;
-
-    const updatedBuildUp = {
-      ...(assembly[buildUpKey] || {}),
-      [field]:
-        field.includes("Description") ||
-        field === "crewType" ||
-        field === "productionUnit" ||
-        field === "materialUnit" ||
-        field === "conversionFactor"
-          ? value
-          : Number(value),
-    };
-
-    let totals = {};
-
-    if (buildUpKey === "laborBuildUp") {
-      const quantity = Number(assembly.quantity || 0);
-      const crewRate = Number(updatedBuildUp.crewRate || 0);
-      const productionRate = Number(updatedBuildUp.productionRate || 0);
-      const markupPercent = Number(updatedBuildUp.markupPercent || 0);
-
-      const hours = productionRate > 0 ? quantity / productionRate : 0;
-      totals.laborTotal = Math.round(hours * crewRate * (1 + markupPercent / 100));
-    }
-
-    if (buildUpKey === "materialBuildUp") {
-      const quantity = Number(assembly.quantity || 0);
-      const conversionFactor = Number(updatedBuildUp.conversionFactor || 0);
-      const wastePercent = Number(updatedBuildUp.wastePercent || 0);
-      const unitCost = Number(updatedBuildUp.unitCost || 0);
-      const taxPercent = Number(updatedBuildUp.taxPercent || 0);
-      const markupPercent = Number(updatedBuildUp.markupPercent || 0);
-
-      const materialQty = quantity * conversionFactor * (1 + wastePercent / 100);
-      const baseMaterial = materialQty * unitCost;
-      totals.materialTotal = Math.round(
-        baseMaterial * (1 + taxPercent / 100) * (1 + markupPercent / 100)
-      );
-    }
-
-    if (buildUpKey === "equipmentBuildUp") {
-      const quantity = Number(updatedBuildUp.quantity || 0);
-      const hours = Number(updatedBuildUp.hours || 0);
-      const hourlyRate = Number(updatedBuildUp.hourlyRate || 0);
-      const standbyHours = Number(updatedBuildUp.standbyHours || 0);
-      const standbyRate = Number(updatedBuildUp.standbyRate || 0);
-      const markupPercent = Number(updatedBuildUp.markupPercent || 0);
-
-      const operatingCost = quantity * hours * hourlyRate;
-      const standbyCost = quantity * standbyHours * standbyRate;
-
-      totals.equipmentTotal = Math.round(
-        (operatingCost + standbyCost) * (1 + markupPercent / 100)
-      );
-    }
-
-    return {
-      ...assembly,
-      [buildUpKey]: updatedBuildUp,
-      ...totals,
-      modified: new Date().toISOString(),
-    };
-  });
-
-  setAssemblies(updatedAssemblies);
-
-  const updatedAssembly = updatedAssemblies.find((a) => a.id === id);
-  if (updatedAssembly) setSelectedAssembly(updatedAssembly);
-}
   function getLineTotal(line) {
     return (
       Number(line.laborTotal || 0) +
@@ -622,17 +1421,32 @@ function updateAssemblyBuildUp(id, buildUpKey, field, value) {
 
   function renderPage() {
     if (activePage === "Home") return <EstimateHome />;
-    if (activePage === "Assemblies")
+    if (activePage === "Assemblies") {
   return (
     <AssembliesPage
       assemblies={assemblies}
+      crews={crews}
+      resources={resources}
+      locations={locations}
+      selectedAssembly={selectedAssembly}
+      setSelectedAssembly={
+        setSelectedAssembly
+      }
       addAssembly={addAssembly}
-      updateAssembly={updateAssembly}
+      updateAssemblyRecord={
+        updateAssemblyRecord
+      }
       deleteAssembly={deleteAssembly}
-      duplicateAssembly={duplicateAssembly}
-      setSelectedAssembly={setSelectedAssembly}
+      duplicateAssembly={
+        duplicateAssembly
+      }
+      getCrewCostSummary={
+        getCrewCostSummary
+      }
+      formatCurrency={formatCurrency}
     />
   );
+}
     if (activePage === "Takeoff") return <TakeoffPage />;
     if (activePage === "Bid Leveling") return <BidLevelingPage />;
     if (activePage === "Procurement") return <ProcurementPage />;
@@ -652,11 +1466,11 @@ function updateAssemblyBuildUp(id, buildUpKey, field, value) {
       setLocations={setLocations}
     />
   );
-if (activePage === "Trade Person Types")
+if (activePage === "Resources")
   return (
-    <WorkerTypesPage
-      workerTypes={workerTypes}
-      setWorkerTypes={setWorkerTypes}
+    <ResourcesPage
+      resources={resources}
+      setResources={setResources}
       locations={locations}
     />
   );
@@ -665,7 +1479,7 @@ if (activePage === "Trade Person Types")
     <CrewsPage
       crews={crews}
       setCrews={setCrews}
-      workerTypes={workerTypes}
+      resources={resources}
       locations={locations}
     />
   );
@@ -685,11 +1499,27 @@ if (activePage === "Trade Person Types")
 
         <EstimatePage
   estimateLines={estimateLines}
+  selectedLine={selectedLine}
   setSelectedLine={setSelectedLine}
   updateLine={updateLine}
+  updateLaborBuildUp={
+    updateLaborBuildUp
+  }
+  updateCrewLaborBuildUp={
+    updateCrewLaborBuildUp
+  }
+  updateMaterialBuildUp={
+    updateMaterialBuildUp
+  }
+  updateEquipmentBuildUp={
+    updateEquipmentBuildUp
+  }
   getLineTotal={getLineTotal}
   formatCurrency={formatCurrency}
   formatNumber={formatNumber}
+  crews={crews}
+  resources={resources}
+  locations={locations}
 />
       </>
     );
@@ -715,31 +1545,9 @@ if (activePage === "Trade Person Types")
         </header>
 
         {renderPage()}
-        {selectedLine && (
-  <EstimateLineDrawer
-    selectedLine={selectedLine}
-    setSelectedLine={setSelectedLine}
-    updateLine={updateLine}
-    updateLaborBuildUp={updateLaborBuildUp}
-    updateMaterialBuildUp={updateMaterialBuildUp}
-    updateEquipmentBuildUp={updateEquipmentBuildUp}
-    formatCurrency={formatCurrency}
-    mode="estimate"
-  />
-)}
+        
 
-{selectedAssembly && (
-  <EstimateLineDrawer
-    selectedLine={selectedAssembly}
-    setSelectedLine={setSelectedAssembly}
-    updateLine={updateSelectedAssembly}
-    updateLaborBuildUp={updateAssemblyLaborBuildUp}
-    updateMaterialBuildUp={updateAssemblyMaterialBuildUp}
-    updateEquipmentBuildUp={updateAssemblyEquipmentBuildUp}
-    formatCurrency={formatCurrency}
-    mode="assembly"
-  />
-)}
+
       </main>
 
       
