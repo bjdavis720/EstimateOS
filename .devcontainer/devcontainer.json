@@ -1,0 +1,25 @@
+{
+  "name": "EstimateOS",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+
+  "forwardPorts": [5173],
+
+  "portsAttributes": {
+    "5173": {
+      "label": "EstimateOS",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "postCreateCommand": "npm ci",
+
+  "postStartCommand": "nohup npm run dev -- --host 0.0.0.0 --port 5173 --strictPort > /tmp/estimateos-vite.log 2>&1 &",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}
