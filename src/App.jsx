@@ -825,12 +825,15 @@ function updateMaterialBuildUp(
           ...(line.materialBuildUp || {}),
 
           [field]:
-            field ===
-              "materialDescription" ||
-            field === "materialUnit" ||
-            field === "conversionFactor"
-              ? value
-              : Number(value),
+  [
+    "materialDescription",
+    "materialUnit",
+    "conversionFactor",
+    "conversionFormula",
+    "conversion",
+  ].includes(field)
+    ? value
+    : Number(value),
         };
 
         const { materialTotal } =

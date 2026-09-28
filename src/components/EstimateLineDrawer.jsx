@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { getEstimateWorkspaceData } from "../calculations/estimateWorkspaceCalculations";
+import {
+  calculateMaterialBuildUpTotal,
+} from "../calculations/estimateCalculations";
 
 function EstimateLineDrawer({
   selectedLine,
@@ -35,8 +38,7 @@ const {
   crewLaborTotal,
   crewEquipmentTotal,
   laborHours,
-  materialQuantity,
-} = workspace;
+  } = workspace;
 
 
 
@@ -538,6 +540,200 @@ const {
       {activeTab === "Material" && (
         <div className="drawer-section">
           <h3>Material Build-Up</h3>
+          {/* MATERIAL CONVERSION METHOD */}
+
+{(() => {
+  const material = selectedLine.materialBuildUp || {};
+  const conversion = material.conversion || {};
+
+  const conversionMode =
+    conversion.mode ||
+    (material.conversionFormula
+      ? "FORMULA"
+      : "DIRECT");
+
+  const updateConversion = (changes) => {
+    updateMaterialBuildUp(
+      selectedLine.id,
+      "conversion",
+      {
+        ...conversion,
+        ...changes,
+      }
+    );
+  };
+
+  return (
+    <div className="calc-summary">
+      <h4>Quantity Conversion</h4>
+
+      <label className="drawer-field">
+        <span>Conversion Method</span>
+
+        <select
+          value={conversionMode}
+          onChange={(event) => {
+            const nextMode = event.target.value;
+
+            if (nextMode === "GUIDED") {
+              updateConversion({
+                mode: "GUIDED",
+                method: "AREA_THICKNESS",
+                takeoffUnit:
+                  selectedLine.unit || "SF",
+                outputUnit: "CY",
+                inputs: {
+                  thickness:
+                    conversion.inputs
+                      ?.thickness ?? 4,
+                  thicknessUnit:
+                    conversion.inputs
+                      ?.thicknessUnit || "IN",
+                },
+              });
+            } else {
+              updateConversion({
+                mode: nextMode,
+              });
+            }
+          }}
+        >
+          <option value="DIRECT">
+            Direct Conversion Factor
+          </option>
+
+          <option value="FORMULA">
+            Custom Formula
+          </option>
+
+          <option value="GUIDED">
+            Guided Conversion
+          </option>
+        </select>
+      </label>
+
+      {conversionMode === "GUIDED" && (
+        <>
+          <label className="drawer-field">
+            <span>Conversion Type</span>
+
+            <select
+              value={
+                conversion.method ||
+                "AREA_THICKNESS"
+              }
+              onChange={(event) =>
+                updateConversion({
+                  method: event.target.value,
+                })
+              }
+            >
+              <option value="AREA_THICKNESS">
+                Area × Thickness → Volume
+              </option>
+            </select>
+          </label>
+
+          <label className="drawer-field">
+            <span>Takeoff Unit</span>
+
+            <select
+              value={
+                conversion.takeoffUnit ||
+                selectedLine.unit ||
+                "SF"
+              }
+              onChange={(event) =>
+                updateConversion({
+                  takeoffUnit:
+                    event.target.value,
+                })
+              }
+            >
+              <option value="SF">SF</option>
+              <option value="SY">SY</option>
+              <option value="SM">SM</option>
+            </select>
+          </label>
+
+          <label className="drawer-field">
+            <span>Thickness</span>
+
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={
+                conversion.inputs
+                  ?.thickness ?? 4
+              }
+              onChange={(event) =>
+                updateConversion({
+                  inputs: {
+                    ...(conversion.inputs || {}),
+                    thickness:
+                      event.target.value,
+                  },
+                })
+              }
+            />
+          </label>
+
+          <label className="drawer-field">
+            <span>Thickness Unit</span>
+
+            <select
+              value={
+                conversion.inputs
+                  ?.thicknessUnit || "IN"
+              }
+              onChange={(event) =>
+                updateConversion({
+                  inputs: {
+                    ...(conversion.inputs || {}),
+                    thicknessUnit:
+                      event.target.value,
+                  },
+                })
+              }
+            >
+              <option value="IN">Inches</option>
+              <option value="FT">Feet</option>
+              <option value="MM">Millimeters</option>
+              <option value="M">Meters</option>
+            </select>
+          </label>
+
+          <label className="drawer-field">
+            <span>Output Unit</span>
+
+            <select
+              value={
+                conversion.outputUnit || "CY"
+              }
+              onChange={(event) =>
+                updateConversion({
+                  outputUnit:
+                    event.target.value,
+                })
+              }
+            >
+              <option value="CY">
+                Cubic Yards
+              </option>
+              <option value="CF">
+                Cubic Feet
+              </option>
+              <option value="CM">
+                Cubic Meters
+              </option>
+            </select>
+          </label>
+        </>
+      )}
+    </div>
+  );
+})()}
 
           <label className="drawer-field">
             <span>Material Description</span>
@@ -558,41 +754,85 @@ const {
           </label>
 
           <label className="drawer-field">
-            <span>Material Unit</span>
+  <span>Material Unit</span>
 
-            <input
-              value={
-                selectedLine.materialBuildUp
-                  ?.materialUnit || "CY"
-              }
-              onChange={(event) =>
-                updateMaterialBuildUp(
-                  selectedLine.id,
-                  "materialUnit",
-                  event.target.value
-                )
-              }
-            />
-          </label>
+  {selectedLine.materialBuildUp
+    ?.conversion?.mode === "GUIDED" ? (
+    <input
+      type="text"
+      value={
+        selectedLine.materialBuildUp
+          .conversion.outputUnit || "CY"
+      }
+      readOnly
+    />
+  ) : (
+    <input
+      value={
+        selectedLine.materialBuildUp
+          ?.materialUnit || ""
+      }
+      onChange={(event) =>
+        updateMaterialBuildUp(
+          selectedLine.id,
+          "materialUnit",
+          event.target.value
+        )
+      }
+    />
+  )}
+</label>
 
-          <label className="drawer-field">
-            <span>Conversion Factor</span>
+          {(() => {
+  const material =
+    selectedLine.materialBuildUp || {};
 
-            <input
-              type="text"
-              value={
-                selectedLine.materialBuildUp
-                  ?.conversionFactor || ""
-              }
-              onChange={(event) =>
-                updateMaterialBuildUp(
-                  selectedLine.id,
-                  "conversionFactor",
-                  event.target.value
-                )
-              }
-            />
-          </label>
+  const conversionMode =
+    material.conversion?.mode ||
+    (material.conversionFormula
+      ? "FORMULA"
+      : "DIRECT");
+
+  if (conversionMode === "GUIDED") {
+    return null;
+  }
+
+  const isFormula =
+    conversionMode === "FORMULA";
+
+  return (
+    <label className="drawer-field">
+      <span>
+        {isFormula
+          ? "Conversion Formula"
+          : "Conversion Factor"}
+      </span>
+
+      <input
+        type="text"
+        value={
+          isFormula
+            ? material.conversionFormula ?? ""
+            : material.conversionFactor ?? ""
+        }
+        placeholder={
+          isFormula
+            ? "Example: =4/12/27"
+            : "Example: 0.012345679"
+        }
+        onChange={(event) =>
+          updateMaterialBuildUp(
+            selectedLine.id,
+            isFormula
+              ? "conversionFormula"
+              : "conversionFactor",
+            event.target.value
+          )
+        }
+      />
+    </label>
+  );
+})()}
 
           <label className="drawer-field">
             <span>Waste %</span>
@@ -670,25 +910,81 @@ const {
             />
           </label>
 
-          <div className="calc-summary">
-            <p>
-              <strong>
-                Calculated Material Qty:
-              </strong>{" "}
-              {materialQuantity.toFixed(2)}{" "}
-              {selectedLine.materialBuildUp
-                ?.materialUnit || ""}
-            </p>
+          {(() => {
+  const material =
+    selectedLine.materialBuildUp || {};
 
-            <p>
-              <strong>
-                Calculated Material:
-              </strong>{" "}
-              {formatCurrency(
-                selectedLine.materialTotal || 0
-              )}
-            </p>
-          </div>
+  const calculation =
+    calculateMaterialBuildUpTotal(
+      selectedLine.quantity,
+      material
+    );
+
+  const isGuided =
+    material.conversion?.mode === "GUIDED";
+
+  const unit = isGuided
+    ? material.conversion.outputUnit || "CY"
+    : material.materialUnit || "";
+
+  return (
+    <div className="calc-summary">
+      {!calculation.conversionIsValid && (
+        <p role="alert">
+          Conversion error:{" "}
+          {calculation.conversionError}
+        </p>
+      )}
+
+      {calculation.conversionIsValid && (
+        <>
+          <p>
+            <strong>
+              Calculated Conversion:
+            </strong>{" "}
+            {calculation.calculatedConversion.toFixed(8)}
+          </p>
+
+          <p>
+            <strong>
+              Net Material Quantity:
+            </strong>{" "}
+            {calculation.netMaterialQuantity.toFixed(2)}{" "}
+            {unit}
+          </p>
+
+          <p>
+            <strong>
+              Waste Quantity:
+            </strong>{" "}
+            {(
+              calculation.materialQuantity -
+              calculation.netMaterialQuantity
+            ).toFixed(2)}{" "}
+            {unit}
+          </p>
+
+          <p>
+            <strong>
+              Purchase Quantity:
+            </strong>{" "}
+            {calculation.materialQuantity.toFixed(2)}{" "}
+            {unit}
+          </p>
+        </>
+      )}
+
+      <p>
+        <strong>
+          Calculated Material Cost:
+        </strong>{" "}
+        {formatCurrency(
+          selectedLine.materialTotal || 0
+        )}
+      </p>
+    </div>
+  );
+})()}
         </div>
       )}
 

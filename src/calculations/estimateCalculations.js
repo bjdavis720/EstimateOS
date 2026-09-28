@@ -3,6 +3,10 @@ import {
   evaluateFormulaResult,
 } from "../utils/evaluateFormula";
 
+import {
+  calculateGuidedQuantity,
+} from "./quantityConversions";
+
 export function calculateMaterialBuildUpTotal(
   estimateQuantity,
   materialBuildUp
@@ -10,17 +14,6 @@ export function calculateMaterialBuildUpTotal(
   const quantity = Number(
     estimateQuantity || 0
   );
-
-  const conversionInput =
-    materialBuildUp?.conversionFormula ??
-    materialBuildUp?.conversionFactor ??
-    0;
-
-  const conversionResult =
-    evaluateFormulaResult(conversionInput);
-
-  const conversionFactor =
-    conversionResult.value;
 
   const wastePercent = Number(
     materialBuildUp?.wastePercent || 0
@@ -38,10 +31,76 @@ export function calculateMaterialBuildUpTotal(
     materialBuildUp?.markupPercent || 0
   );
 
-  const materialQuantity =
-    quantity *
-    conversionFactor *
-    (1 + wastePercent / 100);
+  const conversion = materialBuildUp?.conversion;
+
+ let enteredConversion;
+let calculatedConversion = 0;
+let conversionIsValid;
+let conversionError;
+let materialQuantity = 0;
+let netMaterialQuantity = 0;
+
+  if (conversion?.mode === "GUIDED") {
+    const result = calculateGuidedQuantity({
+      method: conversion.method,
+      takeoffQuantity: quantity,
+      takeoffUnit: conversion.takeoffUnit,
+      inputs: conversion.inputs || {},
+      outputUnit: conversion.outputUnit,
+      wastePercent,
+    });
+
+    conversionIsValid = result.isValid;
+    conversionError = result.error;
+
+    if (result.isValid) {
+      calculatedConversion =
+        result.conversionFactor;
+
+      netMaterialQuantity =
+        result.netQuantity;
+
+      materialQuantity =
+        result.purchaseQuantity;
+    }
+
+    enteredConversion =
+      conversion.method || "";
+  } else {
+    // Preserve existing estimates and
+    // existing custom formula behavior.
+
+    const conversionInput =
+      materialBuildUp?.conversionFormula !==
+        undefined &&
+      materialBuildUp?.conversionFormula !==
+        null &&
+      materialBuildUp?.conversionFormula !== ""
+        ? materialBuildUp.conversionFormula
+        : materialBuildUp?.conversionFactor ?? 0;
+
+    const conversionResult =
+      evaluateFormulaResult(conversionInput);
+
+    enteredConversion =
+      String(conversionInput);
+
+    calculatedConversion =
+      conversionResult.value;
+
+    conversionIsValid =
+      conversionResult.isValid;
+
+    conversionError =
+      conversionResult.error;
+
+    netMaterialQuantity =
+      quantity * calculatedConversion;
+
+    materialQuantity =
+      netMaterialQuantity *
+      (1 + wastePercent / 100);
+  }
 
   const baseMaterial =
     materialQuantity * unitCost;
@@ -55,14 +114,11 @@ export function calculateMaterialBuildUpTotal(
     (1 + markupPercent / 100);
 
   return {
-    enteredConversion:
-      String(conversionInput),
-    calculatedConversion:
-      conversionFactor,
-    conversionIsValid:
-      conversionResult.isValid,
-    conversionError:
-      conversionResult.error,
+    enteredConversion,
+    calculatedConversion,
+    conversionIsValid,
+    conversionError,
+    netMaterialQuantity,
     materialQuantity,
     materialTotal,
   };
