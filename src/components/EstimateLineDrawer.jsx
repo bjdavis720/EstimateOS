@@ -1,9 +1,5 @@
 import { useState } from "react";
-import {
-  calculateEquipmentResourceRate,
-  calculateLaborResourceRate,
-  getApplicableResourceRate as getApplicableRate,
-} from "../calculations/crewCalculations";
+import { getEstimateWorkspaceData } from "../calculations/estimateWorkspaceCalculations";
 
 function EstimateLineDrawer({
   selectedLine,
@@ -23,183 +19,26 @@ function EstimateLineDrawer({
     useState("Classification");
 
   if (!selectedLine) return null;
+const workspace =
+  getEstimateWorkspaceData({
+    selectedLine,
+    crews,
+    resources,
+    locations,
+  });
 
-  function evaluateFormula(value) {
-    if (typeof value === "number") return value;
-
-    const safeValue = String(value).replace(
-      /[^0-9+\-*/().\s]/g,
-      ""
-    );
-
-    try {
-      const result = Function(
-        `"use strict"; return (${safeValue})`
-      )();
-
-      return Number.isFinite(result)
-        ? result
-        : 0;
-    } catch {
-      return 0;
-    }
-  }
+const {
+  selectedCrew,
+  selectedCrewLocation,
+  crewSummary,
+  crewHours,
+  crewLaborTotal,
+  crewEquipmentTotal,
+  laborHours,
+  materialQuantity,
+} = workspace;
 
 
-
-  function getCrewDisplaySummary(crew) {
-    if (!crew) {
-      return {
-        members: [],
-        laborHourlyCost: 0,
-        equipmentHourlyCost: 0,
-        totalHourlyCost: 0,
-      };
-    }
-
-    const members = (crew.members || []).map(
-      (member) => {
-        const resourceId =
-          member.resourceId ??
-          member.workerTypeId ??
-          "";
-
-        const resource = resources.find(
-          (item) =>
-            String(item.id) ===
-            String(resourceId)
-        );
-
-        const rate = resource
-          ? getApplicableRate(resource, crew)
-          : null;
-
-        const resourceType =
-          resource?.resourceType || "Unknown";
-
-        const hourlyRate =
-          resourceType === "Equipment"
-            ? calculateEquipmentResourceRate(
-                rate
-              )
-            : calculateLaborResourceRate(rate);
-
-        const quantity = Number(
-          member.quantity || 0
-        );
-
-        return {
-          ...member,
-          resource,
-          resourceType,
-          rate,
-          hourlyRate,
-          extendedRate:
-            quantity * hourlyRate,
-        };
-      }
-    );
-
-    const laborHourlyCost = members.reduce(
-      (sum, member) =>
-        sum +
-        (member.resourceType === "Labor"
-          ? member.extendedRate
-          : 0),
-      0
-    );
-
-    const equipmentHourlyCost =
-      members.reduce(
-        (sum, member) =>
-          sum +
-          (member.resourceType === "Equipment"
-            ? member.extendedRate
-            : 0),
-        0
-      );
-
-    return {
-      members,
-      laborHourlyCost,
-      equipmentHourlyCost,
-      totalHourlyCost:
-        laborHourlyCost +
-        equipmentHourlyCost,
-    };
-  }
-
-  const selectedCrew = crews.find(
-    (crew) =>
-      String(crew.id) ===
-      String(
-        selectedLine.laborBuildUp?.crewId ||
-          ""
-      )
-  );
-
-  const crewSummary =
-    getCrewDisplaySummary(selectedCrew);
-
-  const crewProductionRate = Number(
-    selectedCrew?.productionRate || 0
-  );
-
-  const crewHours =
-    crewProductionRate > 0
-      ? Number(selectedLine.quantity || 0) /
-        crewProductionRate
-      : 0;
-
-  const crewMarkupPercent = Number(
-    selectedLine.laborBuildUp
-      ?.markupPercent || 0
-  );
-
-  const crewMarkupFactor =
-    1 + crewMarkupPercent / 100;
-
-  const crewLaborTotal =
-    crewHours *
-    crewSummary.laborHourlyCost *
-    crewMarkupFactor;
-
-  const crewEquipmentTotal =
-    crewHours *
-    crewSummary.equipmentHourlyCost *
-    crewMarkupFactor;
-
-  const laborHours =
-    selectedLine.laborBuildUp?.productionRate >
-    0
-      ? Number(selectedLine.quantity || 0) /
-        Number(
-          selectedLine.laborBuildUp
-            .productionRate || 1
-        )
-      : 0;
-
-  const conversionFactor = evaluateFormula(
-    selectedLine.materialBuildUp
-      ?.conversionFactor || 0
-  );
-
-  const materialQuantity =
-    Number(selectedLine.quantity || 0) *
-    conversionFactor *
-    (1 +
-      Number(
-        selectedLine.materialBuildUp
-          ?.wastePercent || 0
-      ) /
-        100);
-
-  const selectedCrewLocation =
-    locations.find(
-      (location) =>
-        String(location.id) ===
-        String(selectedCrew?.locationId)
-    ) || null;
 
   const tabs = [
     "Classification",

@@ -1,9 +1,15 @@
+import { evaluateFormula } from "../utils/evaluateFormula";
+
 export function calculateAssemblyMaterialCostPerUnit(
   item
 ) {
-  const quantityPerUnit = Number(
-    item?.quantityPerUnit || 0
-  );
+  const conversionInput =
+    item?.conversionFormula ??
+    item?.quantityPerUnit ??
+    0;
+
+  const quantityPerUnit =
+    evaluateFormula(conversionInput);
 
   const wasteFactor =
     1 +

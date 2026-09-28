@@ -40,15 +40,18 @@ export function createBlankEstimateLine() {
       markupPercent: 0,
     },
 
-    materialBuildUp: {
-      materialDescription: "",
-      materialUnit: "CY",
-      conversionFactor: 0,
-      wastePercent: 0,
-      unitCost: 0,
-      taxPercent: 0,
-      markupPercent: 0,
-    },
+   materialBuildUp: {
+  materialDescription: "",
+  materialUnit: "CY",
+
+  conversionFormula: "",
+  conversionFactor: 0,
+
+  wastePercent: 0,
+  unitCost: 0,
+  taxPercent: 0,
+  markupPercent: 0,
+},
 
     equipmentBuildUp: {
       equipmentDescription: "",
@@ -128,32 +131,62 @@ export function migrateLegacyAssembly(assembly) {
     Number(legacyEquipment.hours || 0) !== 0;
 
   const migratedMaterials =
-    Array.isArray(assembly.materials)
-      ? assembly.materials
-      : hasLegacyMaterial
-        ? [
-            {
-              id: Date.now() + 1,
-              description:
-                legacyMaterial.materialDescription ||
-                "",
-              unit:
-                legacyMaterial.materialUnit || "EA",
-              quantityPerUnit:
-                legacyMaterial.conversionFactor ||
-                0,
-              wastePercent:
-                legacyMaterial.wastePercent || 0,
-              unitCost:
-                legacyMaterial.unitCost || 0,
-              taxPercent:
-                legacyMaterial.taxPercent || 0,
-              markupPercent:
-                legacyMaterial.markupPercent ||
-                0,
-            },
-          ]
-        : [];
+  Array.isArray(assembly.materials)
+    ? assembly.materials.map((item) => ({
+        ...item,
+
+        conversionFormula:
+          item.conversionFormula ??
+          (item.quantityPerUnit !==
+            undefined &&
+          item.quantityPerUnit !== null
+            ? String(item.quantityPerUnit)
+            : ""),
+
+        quantityPerUnit:
+          item.quantityPerUnit ?? 0,
+      }))
+    : hasLegacyMaterial
+      ? [
+          {
+            id: Date.now() + 1,
+
+            description:
+              legacyMaterial.materialDescription ||
+              "",
+
+            unit:
+              legacyMaterial.materialUnit || "EA",
+
+            conversionFormula:
+              legacyMaterial.conversionFormula ??
+              (legacyMaterial.conversionFactor !==
+                undefined &&
+              legacyMaterial.conversionFactor !==
+                null
+                ? String(
+                    legacyMaterial.conversionFactor
+                  )
+                : ""),
+
+            quantityPerUnit:
+              legacyMaterial.conversionFactor ||
+              0,
+
+            wastePercent:
+              legacyMaterial.wastePercent || 0,
+
+            unitCost:
+              legacyMaterial.unitCost || 0,
+
+            taxPercent:
+              legacyMaterial.taxPercent || 0,
+
+            markupPercent:
+              legacyMaterial.markupPercent || 0,
+          },
+        ]
+      : [];
 
   const migratedEquipment =
     Array.isArray(

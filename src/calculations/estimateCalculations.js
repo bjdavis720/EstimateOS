@@ -1,29 +1,7 @@
-export function evaluateFormula(value) {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  const safeValue = String(value).replace(
-    /[^0-9+\-*/().\s]/g,
-    ""
-  );
-
-  if (!safeValue.trim()) {
-    return 0;
-  }
-
-  try {
-    const result = Function(
-      `"use strict"; return (${safeValue})`
-    )();
-
-    return Number.isFinite(result)
-      ? result
-      : 0;
-  } catch {
-    return 0;
-  }
-}
+import {
+  evaluateFormula,
+  evaluateFormulaResult,
+} from "../utils/evaluateFormula";
 
 export function calculateMaterialBuildUpTotal(
   estimateQuantity,
@@ -33,9 +11,16 @@ export function calculateMaterialBuildUpTotal(
     estimateQuantity || 0
   );
 
-  const conversionFactor = evaluateFormula(
-    materialBuildUp?.conversionFactor || 0
-  );
+  const conversionInput =
+    materialBuildUp?.conversionFormula ??
+    materialBuildUp?.conversionFactor ??
+    0;
+
+  const conversionResult =
+    evaluateFormulaResult(conversionInput);
+
+  const conversionFactor =
+    conversionResult.value;
 
   const wastePercent = Number(
     materialBuildUp?.wastePercent || 0
@@ -70,6 +55,14 @@ export function calculateMaterialBuildUpTotal(
     (1 + markupPercent / 100);
 
   return {
+    enteredConversion:
+      String(conversionInput),
+    calculatedConversion:
+      conversionFactor,
+    conversionIsValid:
+      conversionResult.isValid,
+    conversionError:
+      conversionResult.error,
     materialQuantity,
     materialTotal,
   };
@@ -124,3 +117,5 @@ export function getEstimateLineTotal(line) {
     Number(line?.otherTotal || 0)
   );
 }
+
+export { evaluateFormula };
