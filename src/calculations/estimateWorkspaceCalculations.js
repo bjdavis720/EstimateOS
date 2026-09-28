@@ -4,7 +4,9 @@ import {
   getApplicableResourceRate,
 } from "./crewCalculations";
 
-import { evaluateFormula } from "./estimateCalculations";
+import {
+  calculateMaterialBuildUpTotal,
+} from "./estimateCalculations";
 
 function getCrewDisplaySummary({
   crew,
@@ -181,20 +183,17 @@ export function getEstimateWorkspaceData({
         laborProductionRate
       : 0;
 
-  const conversionFactor = evaluateFormula(
-    selectedLine.materialBuildUp
-      ?.conversionFactor || 0
-  );
+   const materialCalculation =
+    calculateMaterialBuildUpTotal(
+      estimateQuantity,
+      selectedLine.materialBuildUp
+    );
 
-  const wastePercent = Number(
-    selectedLine.materialBuildUp
-      ?.wastePercent || 0
-  );
+  const conversionFactor =
+    materialCalculation.calculatedConversion;
 
   const materialQuantity =
-    estimateQuantity *
-    conversionFactor *
-    (1 + wastePercent / 100);
+    materialCalculation.materialQuantity;
 
   const selectedCrewLocation =
     locations.find(
