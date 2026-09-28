@@ -1,8 +1,14 @@
 // EstimateOS Universal Quantity Conversion Engine
-// Phase 1: Area x Thickness -> Volume
 //
-// This module does not depend on React, estimate
-// records, or material-specific pricing.
+// Supported methods:
+// 1. AREA_THICKNESS
+//    Area x Thickness -> Volume
+//
+// 2. AREA_THICKNESS_DENSITY
+//    Area x Thickness x Density -> Weight
+//
+// TON = US short ton (2,000 LB)
+// CM = Cubic Meter (existing EstimateOS unit)
 
 const LENGTH_TO_FEET = {
   IN: 1 / 12,
@@ -21,6 +27,14 @@ const VOLUME_FROM_CUBIC_FEET = {
   CF: 1,
   CY: 1 / 27,
   CM: 0.028316846592,
+};
+
+const POUNDS_PER_KILOGRAM = 2.20462262185;
+
+const WEIGHT_FROM_POUNDS = {
+  LB: 1,
+  TON: 1 / 2000,
+  KG: 1 / POUNDS_PER_KILOGRAM,
 };
 
 function validNonnegativeNumber(value) {
@@ -58,7 +72,12 @@ export function calculateGuidedQuantity({
   outputUnit,
   wastePercent = 0,
 }) {
-  if (method !== "AREA_THICKNESS") {
+  const supportedMethods = [
+    "AREA_THICKNESS",
+    "AREA_THICKNESS_DENSITY",
+  ];
+
+  if (!supportedMethods.includes(method)) {
     return invalidResult(
       "Unsupported conversion method."
     );
@@ -82,9 +101,6 @@ export function calculateGuidedQuantity({
   const thicknessFactor =
     LENGTH_TO_FEET[inputs.thicknessUnit];
 
-  const volumeFactor =
-    VOLUME_FROM_CUBIC_FEET[outputUnit];
-
   if (quantity === null) {
     return invalidResult(
       "Enter a valid takeoff quantity."
@@ -105,28 +121,115 @@ export function calculateGuidedQuantity({
 
   if (
     areaFactor === undefined ||
-    thicknessFactor === undefined ||
-    volumeFactor === undefined
+    thicknessFactor === undefined
   ) {
     return invalidResult(
       "Unsupported or incompatible units."
     );
   }
 
-  // Convert area to square feet and
-  // thickness to feet.
+  // Calculate volume in cubic feet.
   const squareFeet = quantity * areaFactor;
 
   const thicknessFeet =
     thickness * thicknessFactor;
 
-  // Calculate volume in cubic feet.
   const cubicFeet =
     squareFeet * thicknessFeet;
 
-  // Convert to the requested volume unit.
-  const netQuantity =
-    cubicFeet * volumeFactor;
+  // Conversion per one takeoff unit.
+  const cubicFeetPerTakeoffUnit =
+    areaFactor * thicknessFeet;
+
+  let netQuantity;
+  let conversionFactor;
+
+  if (method === "AREA_THICKNESS") {
+    const volumeFactor =
+      VOLUME_FROM_CUBIC_FEET[outputUnit];
+
+    if (volumeFactor === undefined) {
+      return invalidResult(
+        "Unsupported volume output unit."
+      );
+    }
+
+    netQuantity =
+      cubicFeet * volumeFactor;
+
+    conversionFactor =
+      cubicFeetPerTakeoffUnit * volumeFactor;
+  }
+
+  if (method === "AREA_THICKNESS_DENSITY") {
+    const density = validNonnegativeNumber(
+      inputs.density
+    );
+
+    const densityUnit = inputs.densityUnit;
+
+    const weightFactor =
+      WEIGHT_FROM_POUNDS[outputUnit];
+
+    if (density === null) {
+      return invalidResult(
+        "Enter a valid material density."
+      );
+    }
+
+    if (weightFactor === undefined) {
+      return invalidResult(
+        "Unsupported weight output unit."
+      );
+    }
+
+    // Convert density into pounds
+    // per cubic foot.
+    let poundsPerCubicFoot;
+
+    switch (densityUnit) {
+      case "TON/CY":
+        poundsPerCubicFoot =
+          (density * 2000) / 27;
+        break;
+
+      case "LB/CF":
+        poundsPerCubicFoot = density;
+        break;
+
+      case "KG/CM":
+        poundsPerCubicFoot =
+          density *
+          POUNDS_PER_KILOGRAM *
+          VOLUME_FROM_CUBIC_FEET.CM;
+        break;
+
+      default:
+        return invalidResult(
+          "Unsupported density unit."
+        );
+    }
+
+    const pounds =
+      cubicFeet * poundsPerCubicFoot;
+
+    netQuantity =
+      pounds * weightFactor;
+
+    conversionFactor =
+      cubicFeetPerTakeoffUnit *
+      poundsPerCubicFoot *
+      weightFactor;
+  }
+
+  if (
+    !Number.isFinite(netQuantity) ||
+    !Number.isFinite(conversionFactor)
+  ) {
+    return invalidResult(
+      "Calculation exceeds supported numeric limits."
+    );
+  }
 
   const wasteQuantity =
     netQuantity * (waste / 100);
@@ -134,11 +237,14 @@ export function calculateGuidedQuantity({
   const purchaseQuantity =
     netQuantity + wasteQuantity;
 
-  // Conversion per one takeoff unit.
-  const conversionFactor =
-    areaFactor *
-    thicknessFeet *
-    volumeFactor;
+  if (
+    !Number.isFinite(wasteQuantity) ||
+    !Number.isFinite(purchaseQuantity)
+  ) {
+    return invalidResult(
+      "Calculated quantity exceeds supported numeric limits."
+    );
+  }
 
   return {
     isValid: true,

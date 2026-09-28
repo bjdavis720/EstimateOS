@@ -618,20 +618,38 @@ const {
             <span>Conversion Type</span>
 
             <select
-              value={
-                conversion.method ||
-                "AREA_THICKNESS"
-              }
-              onChange={(event) =>
-                updateConversion({
-                  method: event.target.value,
-                })
-              }
-            >
-              <option value="AREA_THICKNESS">
-                Area × Thickness → Volume
-              </option>
-            </select>
+  value={
+    conversion.method ||
+    "AREA_THICKNESS"
+  }
+  onChange={(event) => {
+    const nextMethod = event.target.value;
+
+    updateConversion({
+      method: nextMethod,
+      outputUnit:
+        nextMethod === "AREA_THICKNESS_DENSITY"
+          ? "TON"
+          : "CY",
+      inputs: {
+        ...(conversion.inputs || {}),
+        density:
+          conversion.inputs?.density ?? 1.5,
+        densityUnit:
+          conversion.inputs?.densityUnit ||
+          "TON/CY",
+      },
+    });
+  }}
+>
+  <option value="AREA_THICKNESS">
+    Area × Thickness → Volume
+  </option>
+
+  <option value="AREA_THICKNESS_DENSITY">
+    Area × Thickness × Density → Weight
+  </option>
+</select>
           </label>
 
           <label className="drawer-field">
@@ -703,31 +721,104 @@ const {
               <option value="M">Meters</option>
             </select>
           </label>
+{conversion.method ===
+  "AREA_THICKNESS_DENSITY" && (
+  <>
+    <label className="drawer-field">
+      <span>Material Density</span>
 
+      <input
+        type="number"
+        min="0"
+        step="any"
+        value={
+          conversion.inputs?.density ?? 1.5
+        }
+        onChange={(event) =>
+          updateConversion({
+            inputs: {
+              ...(conversion.inputs || {}),
+              density: event.target.value,
+            },
+          })
+        }
+      />
+    </label>
+
+    <label className="drawer-field">
+      <span>Density Unit</span>
+
+      <select
+        value={
+          conversion.inputs?.densityUnit ||
+          "TON/CY"
+        }
+        onChange={(event) =>
+          updateConversion({
+            inputs: {
+              ...(conversion.inputs || {}),
+              densityUnit: event.target.value,
+            },
+          })
+        }
+      >
+        <option value="TON/CY">
+          US Tons / Cubic Yard
+        </option>
+        <option value="LB/CF">
+          Pounds / Cubic Foot
+        </option>
+        <option value="KG/CM">
+          Kilograms / Cubic Meter
+        </option>
+      </select>
+    </label>
+  </>
+)}
           <label className="drawer-field">
             <span>Output Unit</span>
 
             <select
-              value={
-                conversion.outputUnit || "CY"
-              }
-              onChange={(event) =>
-                updateConversion({
-                  outputUnit:
-                    event.target.value,
-                })
-              }
-            >
-              <option value="CY">
-                Cubic Yards
-              </option>
-              <option value="CF">
-                Cubic Feet
-              </option>
-              <option value="CM">
-                Cubic Meters
-              </option>
-            </select>
+  value={
+    conversion.outputUnit ||
+    (conversion.method ===
+    "AREA_THICKNESS_DENSITY"
+      ? "TON"
+      : "CY")
+  }
+  onChange={(event) =>
+    updateConversion({
+      outputUnit: event.target.value,
+    })
+  }
+>
+  {conversion.method ===
+  "AREA_THICKNESS_DENSITY" ? (
+    <>
+      <option value="TON">
+        US Short Tons
+      </option>
+      <option value="LB">
+        Pounds
+      </option>
+      <option value="KG">
+        Kilograms
+      </option>
+    </>
+  ) : (
+    <>
+      <option value="CY">
+        Cubic Yards
+      </option>
+      <option value="CF">
+        Cubic Feet
+      </option>
+      <option value="CM">
+        Cubic Meters
+      </option>
+    </>
+  )}
+</select>
           </label>
         </>
       )}
