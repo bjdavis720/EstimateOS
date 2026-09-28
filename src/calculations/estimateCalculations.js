@@ -71,11 +71,15 @@ let netMaterialQuantity = 0;
     // existing custom formula behavior.
 
     const conversionInput =
-      materialBuildUp?.conversionFormula !==
-        undefined &&
-      materialBuildUp?.conversionFormula !==
-        null &&
-      materialBuildUp?.conversionFormula !== ""
+  conversion?.mode === "DIRECT"
+    ? materialBuildUp?.conversionFactor ?? 0
+    : conversion?.mode === "FORMULA"
+      ? materialBuildUp?.conversionFormula ?? ""
+      : materialBuildUp?.conversionFormula !==
+            undefined &&
+          materialBuildUp?.conversionFormula !==
+            null &&
+          materialBuildUp?.conversionFormula !== ""
         ? materialBuildUp.conversionFormula
         : materialBuildUp?.conversionFactor ?? 0;
 

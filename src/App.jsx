@@ -836,6 +836,29 @@ function updateMaterialBuildUp(
     : Number(value),
         };
 
+        // Keep guided output and material pricing units synchronized.
+if (
+  field === "conversion" &&
+  value?.mode === "GUIDED"
+) {
+  const newUnit = value.outputUnit || "CY";
+  const previousUnit =
+    line.materialBuildUp?.conversion?.mode === "GUIDED"
+      ? line.materialBuildUp.conversion.outputUnit
+      : line.materialBuildUp?.materialUnit;
+
+  updatedMaterialBuildUp.materialUnit = newUnit;
+
+  // A price for one unit must not silently carry
+  // over when the purchasing unit changes.
+  if (
+    previousUnit &&
+    previousUnit.toUpperCase() !== newUnit
+  ) {
+    updatedMaterialBuildUp.unitCost = 0;
+  }
+}
+
         const { materialTotal } =
           calculateMaterialBuildUpTotal(
             line.quantity,
