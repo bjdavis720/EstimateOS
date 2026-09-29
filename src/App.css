@@ -804,3 +804,130 @@ button {
 .material-library-result button {
   flex-shrink: 0;
 }
+/* Material Library */
+
+.materials-page {
+  width: 100%;
+  max-width: 1500px;
+}
+
+.materials-page > .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.materials-library-card {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.materials-library-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.materials-library-heading h3 {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.materials-library-heading p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.materials-library-search {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+.materials-library-search:focus {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+
+.materials-library-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 650px;
+}
+
+.materials-library-table th {
+  padding: 14px 16px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.materials-library-table td {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+}
+
+.materials-library-table tbody tr {
+  cursor: pointer;
+}
+
+.materials-library-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.materials-library-table tbody tr.selected-row {
+  background: #fff7ed;
+}
+
+.materials-unit-badge {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.materials-status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.materials-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.materials-status.inactive {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.estimate-table .estimate-details-column {
+  width: 76px;
+  min-width: 76px;
+  text-align: center;
+}
+
+.estimate-details-column .details-btn {
+  white-space: nowrap;
+}

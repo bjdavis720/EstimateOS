@@ -23,20 +23,22 @@ function EstimatePage({
       <div className="table-wrap">
         <table className="estimate-table">
           <thead>
-            <tr>
-              <th>Description</th>
-              <th>Qty</th>
-              <th>Unit</th>
-              <th>Labor</th>
-              <th>Material</th>
-              <th>Equipment</th>
-              <th>Subcontract</th>
-              <th>Other</th>
-              <th>Cost/Unit</th>
-              <th>Total</th>
-              <th>Details</th>
-            </tr>
-          </thead>
+  <tr>
+    <th className="estimate-details-column">
+      Details
+    </th>
+    <th>Description</th>
+    <th>Qty</th>
+    <th>Unit</th>
+    <th>Labor</th>
+    <th>Material</th>
+    <th>Equipment</th>
+    <th>Subcontract</th>
+    <th>Other</th>
+    <th>Cost/Unit</th>
+    <th>Total</th>
+  </tr>
+</thead>
 
           <tbody>
             {estimateLines.map((line) => {
@@ -64,6 +66,18 @@ function EstimatePage({
                       : "clickable-row"
                   }
                 >
+                  <td className="estimate-details-column">
+  <button
+    type="button"
+    className="details-btn"
+    onClick={(event) => {
+      event.stopPropagation();
+      setSelectedLine(line);
+    }}
+  >
+    Open
+  </button>
+</td>
                   <td>
                     <input
                       value={
@@ -157,18 +171,7 @@ function EstimatePage({
                     {formatCurrency(total)}
                   </td>
 
-                  <td>
-                    <button
-                      className="details-btn"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedLine(line);
-                      }}
-                    >
-                      Open
-                    </button>
-                  </td>
-                </tr>
+                  </tr>
               );
             })}
           </tbody>

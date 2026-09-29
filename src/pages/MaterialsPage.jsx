@@ -209,12 +209,21 @@ function MaterialsPage({ materials, setMaterials }) {
         </button>
       </div>
 
-      <div className="drawer-section">
-        <h3>Library Materials ({materials.length})</h3>
+      <div className="drawer-section materials-library-card">
+  <div className="materials-library-heading">
+    <div>
+      <h3>Library Materials</h3>
+      <p>
+        {filteredMaterials.length} of {materials.length}
+        {" "}materials
+      </p>
+    </div>
+  </div>
 
         <input
           type="search"
-          placeholder="Search materials..."
+          placeholder="Search by code, material, category or unit..."
+className="materials-library-search"
           value={search}
           onChange={(event) =>
             setSearch(event.target.value)
@@ -222,7 +231,7 @@ function MaterialsPage({ materials, setMaterials }) {
         />
 
         <div className="table-wrap">
-          <table className="data-table">
+          <table className="data-table materials-library-table">
             <thead>
               <tr>
                 <th>Code</th>
@@ -248,14 +257,26 @@ function MaterialsPage({ materials, setMaterials }) {
                   style={{ cursor: "pointer" }}
                 >
                   <td>{material.code}</td>
-                  <td>{material.name}</td>
-                  <td>{material.category}</td>
-                  <td>{material.purchaseUnit}</td>
-                  <td>
-                    {material.isActive
-                      ? "Active"
-                      : "Inactive"}
-                  </td>
+<td>{material.name}</td>
+<td>{material.category}</td>
+
+<td>
+  <span className="materials-unit-badge">
+    {material.purchaseUnit}
+  </span>
+</td>
+
+<td>
+  <span
+    className={
+      material.isActive
+        ? "materials-status active"
+        : "materials-status inactive"
+    }
+  >
+    {material.isActive ? "Active" : "Inactive"}
+  </span>
+</td>
                 </tr>
               ))}
             </tbody>
