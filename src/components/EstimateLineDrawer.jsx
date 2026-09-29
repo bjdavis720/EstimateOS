@@ -76,6 +76,8 @@ applyLibraryMaterial,
 }) {
   const [activeTab, setActiveTab] =
     useState("Classification");
+  const [materialSearch, setMaterialSearch] =
+  useState("");
 
   if (!selectedLine) return null;
 const workspace =
@@ -623,45 +625,111 @@ const {
   );
 })()}
 
+  <div className="material-library-selector">
   <label className="drawer-field">
-    <span>Select Material</span>
+    <span>Search Library Materials</span>
 
-    <select
-      value={
-        selectedLine.materialBuildUp?.materialId || ""
+    <input
+      type="search"
+      placeholder="Search code, name, category..."
+      value={materialSearch}
+      onChange={(event) =>
+        setMaterialSearch(event.target.value)
       }
-      onChange={(event) => {
-        const materialId = event.target.value;
-
-        if (!materialId) return;
-
-        applyLibraryMaterial(
-          selectedLine.id,
-          materialId
-        );
-      }}
-    >
-      <option value="">
-        Select a library material...
-      </option>
-
-      {materials
-        .filter(
-          (material) =>
-            material.isActive ||
-            material.id ===
-              selectedLine.materialBuildUp?.materialId
-        )
-        .map((material) => (
-          <option
-            key={material.id}
-            value={material.id}
-          >
-            {material.code} - {material.name}
-          </option>
-        ))}
-    </select>
+    />
   </label>
+
+  {(() => {
+    const selectedMaterialId =
+      selectedLine.materialBuildUp?.materialId;
+
+    const selectedMaterial = materials.find(
+      (material) =>
+        material.id === selectedMaterialId
+    );
+
+    const query = materialSearch
+      .trim()
+      .toLowerCase();
+
+    const matchingMaterials = materials
+      .filter((material) => material.isActive)
+      .filter((material) =>
+        [
+          material.code,
+          material.name,
+          material.category,
+          material.description,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(query)
+      );
+
+    return (
+      <>
+        <div className="material-library-current">
+          <strong>Current Material</strong>
+
+          <div>
+            {selectedMaterial
+              ? `${selectedMaterial.code} - ${selectedMaterial.name}`
+              : selectedMaterialId
+                ? "Previously selected material unavailable"
+                : "No library material selected"}
+          </div>
+        </div>
+
+        {query && (
+          <div className="material-library-results">
+            {matchingMaterials.length === 0 ? (
+              <p>No matching materials found.</p>
+            ) : (
+              matchingMaterials.map((material) => (
+                <div
+                  key={material.id}
+                  className="material-library-result"
+                >
+                  <div>
+                    <strong>
+                      {material.code} - {material.name}
+                    </strong>
+
+                    <small>
+                      {material.category || "Uncategorized"}
+                      {" | "}
+                      {material.purchaseUnit}
+                    </small>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={
+                      material.id === selectedMaterialId
+                    }
+                    onClick={() => {
+                      applyLibraryMaterial(
+                        selectedLine.id,
+                        material.id
+                      );
+
+                      setMaterialSearch("");
+                    }}
+                  >
+                    {material.id === selectedMaterialId
+                      ? "Selected"
+                      : "Apply"}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </>
+    );
+  })()}
+</div>
 </div>
           {/* MATERIAL CONVERSION METHOD */}
 

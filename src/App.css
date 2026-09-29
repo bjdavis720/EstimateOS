@@ -758,3 +758,49 @@ button {
   background: #fef3c7;
   color: #92400e;
 }
+.material-library-selector {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.material-library-current {
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.material-library-current strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.material-library-results {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.material-library-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+.material-library-result small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+}
+
+.material-library-result button {
+  flex-shrink: 0;
+}
