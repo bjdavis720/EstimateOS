@@ -15,6 +15,8 @@ function EstimatePage({
   crews,
   resources,
   locations,
+  materials,
+  applyLibraryMaterial,
 }) {
   return (
     <div className="estimate-page">
@@ -199,6 +201,8 @@ function EstimatePage({
             crews={crews}
             resources={resources}
             locations={locations}
+            materials={materials}
+applyLibraryMaterial={applyLibraryMaterial}
             mode="estimate"
           />
         ) : (

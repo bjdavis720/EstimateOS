@@ -20,6 +20,8 @@ function EstimateLineDrawer({
   crews = [],
   resources = [],
   locations = [],
+  materials = [],
+applyLibraryMaterial,
   mode = "estimate",
 }) {
   const [activeTab, setActiveTab] =
@@ -544,6 +546,49 @@ const {
       {activeTab === "Material" && (
         <div className="drawer-section">
           <h3>Material Build-Up</h3>
+          <div className="calc-summary">
+  <h4>Library Material</h4>
+
+  <label className="drawer-field">
+    <span>Select Material</span>
+
+    <select
+      value={
+        selectedLine.materialBuildUp?.materialId || ""
+      }
+      onChange={(event) => {
+        const materialId = event.target.value;
+
+        if (!materialId) return;
+
+        applyLibraryMaterial(
+          selectedLine.id,
+          materialId
+        );
+      }}
+    >
+      <option value="">
+        Select a library material...
+      </option>
+
+      {materials
+        .filter(
+          (material) =>
+            material.isActive ||
+            material.id ===
+              selectedLine.materialBuildUp?.materialId
+        )
+        .map((material) => (
+          <option
+            key={material.id}
+            value={material.id}
+          >
+            {material.code} - {material.name}
+          </option>
+        ))}
+    </select>
+  </label>
+</div>
           {/* MATERIAL CONVERSION METHOD */}
 
 {(() => {

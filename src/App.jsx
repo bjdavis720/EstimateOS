@@ -13,6 +13,7 @@ import EstimateHome from "./pages/EstimateHome";
 import EstimateItemsPage from "./pages/EstimateItemsPage";
 import LaborLocationsPage from "./pages/LaborLocationsPage";
 import ResourcesPage from "./pages/ResourcesPage";
+import MaterialsPage from "./pages/MaterialsPage";
 import CrewsPage from "./pages/CrewsPage";
 import {
   calculateEquipmentResourceRate,
@@ -39,6 +40,10 @@ import {
   starterResources,
 } from "./data/starterData";
 import {
+  createStarterMaterials,
+  createEstimateMaterialSnapshot,
+} from "./data/materialLibrary";
+import {
   readStoredJson,
   writeStoredJson,
 } from "./storage/localStorage";
@@ -52,6 +57,12 @@ const blankLine =
 
 
 function App() {
+    const [materials, setMaterials] = useState(() =>
+  readStoredJson(
+    "estimateos_materials",
+    createStarterMaterials
+  )
+);
   const [activePage, setActivePage] = useState("Estimate");
   const [selectedLine, setSelectedLine] = useState(null);
   const [selectedAssembly, setSelectedAssembly] = useState(null);
@@ -199,7 +210,12 @@ const [estimateLines, setEstimateLines] = useState(() => {
     
 
   
-
+useEffect(() => {
+  writeStoredJson(
+    "estimateos_materials",
+    materials
+  );
+}, [materials]);
 useEffect(() => {
   writeStoredJson(
     "estimateos_lines",
@@ -810,7 +826,63 @@ function updateCrewLaborBuildUp(id, field, value) {
     return updatedLines;
   });
 }
+function applyLibraryMaterial(lineId, materialId) {
+  const libraryMaterial = materials.find(
+    (material) => material.id === materialId
+  );
 
+  if (!libraryMaterial || !libraryMaterial.isActive) {
+    return;
+  }
+
+  setEstimateLines((currentLines) => {
+    const updatedLines = currentLines.map((line) => {
+      if (line.id !== lineId) return line;
+
+      const existing = line.materialBuildUp || {};
+
+      const snapshot =
+        createEstimateMaterialSnapshot(libraryMaterial);
+
+      const updatedMaterialBuildUp = {
+        ...existing,
+        ...snapshot,
+
+        // These settings belong to the estimate.
+        wastePercent: existing.wastePercent ?? 0,
+        taxPercent: existing.taxPercent ?? 0,
+        markupPercent: existing.markupPercent ?? 0,
+
+        // Do not retain an old custom conversion
+        // when applying a different library material.
+        conversionFactor: 0,
+        conversionFormula: "",
+      };
+
+      const { materialTotal } =
+        calculateMaterialBuildUpTotal(
+          line.quantity,
+          updatedMaterialBuildUp
+        );
+
+      return {
+        ...line,
+        materialBuildUp: updatedMaterialBuildUp,
+        materialTotal: Math.round(materialTotal),
+      };
+    });
+
+    const updatedSelectedLine = updatedLines.find(
+      (line) => line.id === lineId
+    );
+
+    if (updatedSelectedLine) {
+      setSelectedLine(updatedSelectedLine);
+    }
+
+    return updatedLines;
+  });
+}
 function updateMaterialBuildUp(
   id,
   field,
@@ -962,6 +1034,14 @@ function updateEquipmentBuildUp(
   );
 
   function renderPage() {
+    if (activePage === "Materials") {
+  return (
+  <MaterialsPage
+    materials={materials}
+    setMaterials={setMaterials}
+  />
+);
+}
     if (activePage === "Home") return <EstimateHome />;
     if (activePage === "Assemblies") {
   return (
@@ -1062,6 +1142,8 @@ if (activePage === "Resources")
   crews={crews}
   resources={resources}
   locations={locations}
+  materials={materials}
+applyLibraryMaterial={applyLibraryMaterial}
 />
       </>
     );
