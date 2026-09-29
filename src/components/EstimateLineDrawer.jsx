@@ -3,6 +3,10 @@ import { getEstimateWorkspaceData } from "../calculations/estimateWorkspaceCalcu
 import {
   calculateMaterialBuildUpTotal,
 } from "../calculations/estimateCalculations";
+import {
+  MATERIAL_CONVERSION_TEMPLATES,
+  createConversionFromTemplate,
+} from "../data/materialConversionTemplates";
 
 function EstimateLineDrawer({
   selectedLine,
@@ -566,6 +570,44 @@ const {
   return (
     <div className="calc-summary">
       <h4>Quantity Conversion</h4>
+      <label className="drawer-field">
+  <span>Material Template</span>
+
+  <select
+    value=""
+    onChange={(event) => {
+      const templateId = event.target.value;
+
+      if (!templateId) return;
+
+      const template =
+        createConversionFromTemplate(templateId);
+
+      if (!template) return;
+
+      updateMaterialBuildUp(
+        selectedLine.id,
+        "conversion",
+        template
+      );
+    }}
+  >
+    <option value="">
+      Select a material template...
+    </option>
+
+    {MATERIAL_CONVERSION_TEMPLATES.map(
+      (template) => (
+        <option
+          key={template.id}
+          value={template.id}
+        >
+          {template.name}
+        </option>
+      )
+    )}
+  </select>
+</label>
 
       <label className="drawer-field">
         <span>Conversion Method</span>
