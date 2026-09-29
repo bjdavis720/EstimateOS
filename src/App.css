@@ -739,3 +739,22 @@ button {
     grid-template-columns: 1fr;
   }
 }
+.material-override-status {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #edf2f7;
+  color: #475569;
+}
+
+.material-override-status[data-status="DEFAULT"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.material-override-status[data-status="CUSTOMIZED"] {
+  background: #fef3c7;
+  color: #92400e;
+}

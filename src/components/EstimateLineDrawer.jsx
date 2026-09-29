@@ -7,6 +7,56 @@ import {
   MATERIAL_CONVERSION_TEMPLATES,
   createConversionFromTemplate,
 } from "../data/materialConversionTemplates";
+function getMaterialOverrideStatus(material) {
+  if (!material?.materialId) {
+    return "NONE";
+  }
+
+  const baseline = material.libraryBaseline;
+
+  if (!baseline) {
+    return "LEGACY";
+  }
+
+  const normalizeConversion = (conversion) => {
+    if (!conversion) return null;
+
+    const copy = structuredClone(conversion);
+
+    if (copy.inputs) {
+      for (const field of [
+        "thickness",
+        "density",
+      ]) {
+        if (
+          copy.inputs[field] !== undefined &&
+          copy.inputs[field] !== ""
+        ) {
+          copy.inputs[field] =
+            Number(copy.inputs[field]);
+        }
+      }
+    }
+
+    return copy;
+  };
+
+  const isCustomized =
+    material.materialDescription !==
+      baseline.materialDescription ||
+    material.materialUnit !==
+      baseline.materialUnit ||
+    Number(material.unitCost ?? 0) !==
+      Number(baseline.unitCost ?? 0) ||
+    JSON.stringify(
+      normalizeConversion(material.conversion)
+    ) !==
+      JSON.stringify(
+        normalizeConversion(baseline.conversion)
+      );
+
+  return isCustomized ? "CUSTOMIZED" : "DEFAULT";
+}
 
 function EstimateLineDrawer({
   selectedLine,
@@ -548,6 +598,30 @@ const {
           <h3>Material Build-Up</h3>
           <div className="calc-summary">
   <h4>Library Material</h4>
+  {(() => {
+  const status = getMaterialOverrideStatus(
+    selectedLine.materialBuildUp
+  );
+
+  if (status === "NONE") {
+    return null;
+  }
+
+  const labels = {
+    DEFAULT: "Library defaults",
+    CUSTOMIZED: "Customized for this estimate",
+    LEGACY: "Existing material — baseline unavailable",
+  };
+
+  return (
+    <p
+      className="material-override-status"
+      data-status={status}
+    >
+      {labels[status]}
+    </p>
+  );
+})()}
 
   <label className="drawer-field">
     <span>Select Material</span>

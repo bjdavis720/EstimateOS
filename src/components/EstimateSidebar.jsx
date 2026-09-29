@@ -8,6 +8,7 @@ function EstimateSidebar({ activePage, setActivePage }) {
     "Assemblies",
     "Labor Locations",
     "Resources",
+    "Materials",
     "Crews",
     "Takeoff",
     "Bid Leveling",
