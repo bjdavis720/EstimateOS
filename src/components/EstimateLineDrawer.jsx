@@ -763,8 +763,6 @@ const {
   return (
   <div className="calc-summary material-conversion-section">
       <div className="material-section-heading">
-  <div>
-    <div className="material-section-heading">
   <span className="material-section-number">2</span>
 
   <div>
@@ -774,8 +772,6 @@ const {
       purchasable material quantities.
     </p>
   </div>
-</div>
-      </div>
 </div>
       <label className="drawer-field">
   <span>Material Template</span>
@@ -1074,7 +1070,20 @@ const {
     </div>
   );
 })()}
+<div className="material-pricing-section">
+  <div className="material-section-heading">
+    <span className="material-section-number">3</span>
 
+    <div>
+      <h4>Material Pricing</h4>
+      <p>
+        Define purchasing, waste, tax and markup
+        assumptions for this estimate.
+      </p>
+    </div>
+  </div>
+
+  <div className="material-pricing-grid">
           <label className="drawer-field">
             <span>Material Description</span>
 
@@ -1234,6 +1243,7 @@ const {
           <label className="drawer-field">
             <span>Markup %</span>
 
+
             <input
               type="number"
               value={
@@ -1249,6 +1259,8 @@ const {
               }
             />
           </label>
+            </div>
+</div>
 
           {(() => {
   const material =
@@ -1276,53 +1288,85 @@ const {
         </p>
       )}
 
-      {calculation.conversionIsValid && (
-        <>
-          <p>
-            <strong>
-              Calculated Conversion:
-            </strong>{" "}
-            {calculation.calculatedConversion.toFixed(8)}
-          </p>
+      <div className="material-cost-summary">
+  <div className="material-section-heading">
+    <span className="material-section-number">4</span>
 
-          <p>
-            <strong>
-              Net Material Quantity:
-            </strong>{" "}
+    <div>
+      <h4>Material Cost Summary</h4>
+      <p>
+        Review the calculated purchase quantity and
+        resulting material cost.
+      </p>
+    </div>
+  </div>
+
+  {calculation.conversionIsValid && (
+    <>
+      <div className="material-summary-primary">
+        <div className="material-summary-highlight">
+          <span>Purchase Quantity</span>
+          <strong>
+            {calculation.materialQuantity.toFixed(2)}{" "}
+            {unit}
+          </strong>
+        </div>
+
+        <div className="material-summary-highlight">
+          <span>Total Material Cost</span>
+          <strong>
+            {formatCurrency(
+              selectedLine.materialTotal || 0
+            )}
+          </strong>
+        </div>
+      </div>
+
+      <div className="material-summary-details">
+        <div>
+          <span>Net Material Quantity</span>
+          <strong>
             {calculation.netMaterialQuantity.toFixed(2)}{" "}
             {unit}
-          </p>
+          </strong>
+        </div>
 
-          <p>
-            <strong>
-              Waste Quantity:
-            </strong>{" "}
+        <div>
+          <span>Waste Quantity</span>
+          <strong>
             {(
               calculation.materialQuantity -
               calculation.netMaterialQuantity
             ).toFixed(2)}{" "}
             {unit}
-          </p>
+          </strong>
+        </div>
 
-          <p>
-            <strong>
-              Purchase Quantity:
-            </strong>{" "}
-            {calculation.materialQuantity.toFixed(2)}{" "}
-            {unit}
-          </p>
-        </>
-      )}
+        <div>
+          <span>Calculated Conversion</span>
+          <strong>
+            {calculation.calculatedConversion.toFixed(8)}
+          </strong>
+        </div>
+      </div>
+    </>
+  )}
 
-      <p>
+  {!calculation.conversionIsValid && (
+    <div className="material-summary-primary">
+      <div className="material-summary-highlight">
+        <span>Total Material Cost</span>
         <strong>
-          Calculated Material Cost:
-        </strong>{" "}
-        {formatCurrency(
-          selectedLine.materialTotal || 0
-        )}
-      </p>
+          {formatCurrency(
+            selectedLine.materialTotal || 0
+          )}
+        </strong>
+      </div>
     </div>
+    )}
+</div>
+</div>
+
   );
 })()}
         </div>
@@ -1473,6 +1517,7 @@ const {
           </label>
 
           <label className="drawer-field">
+
             <span>Markup %</span>
 
             <input
@@ -1490,6 +1535,7 @@ const {
               }
             />
           </label>
+
 
           <div className="calc-summary">
             <p>
