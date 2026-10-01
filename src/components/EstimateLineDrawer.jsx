@@ -599,7 +599,13 @@ const {
         <div className="drawer-section">
           <h3>Material Build-Up</h3>
           <div className="calc-summary">
-  <h4>Library Material</h4>
+  <div className="material-section-heading">
+  <span className="material-section-number">1</span>
+  <div>
+    <h4>Material Selection</h4>
+    <p>Select a library material or review estimate-specific changes.</p>
+  </div>
+</div>
   {(() => {
   const status = getMaterialOverrideStatus(
     selectedLine.materialBuildUp
@@ -755,8 +761,22 @@ const {
   };
 
   return (
-    <div className="calc-summary">
-      <h4>Quantity Conversion</h4>
+  <div className="calc-summary material-conversion-section">
+      <div className="material-section-heading">
+  <div>
+    <div className="material-section-heading">
+  <span className="material-section-number">2</span>
+
+  <div>
+    <h4>Quantity Conversion</h4>
+    <p>
+      Configure how takeoff quantities become
+      purchasable material quantities.
+    </p>
+  </div>
+</div>
+      </div>
+</div>
       <label className="drawer-field">
   <span>Material Template</span>
 
@@ -1248,7 +1268,7 @@ const {
     : material.materialUnit || "";
 
   return (
-    <div className="calc-summary">
+  <div className="calc-summary material-conversion-section">
       {!calculation.conversionIsValid && (
         <p role="alert">
           Conversion error:{" "}

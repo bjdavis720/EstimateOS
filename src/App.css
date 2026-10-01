@@ -931,3 +931,143 @@ button {
 .estimate-details-column .details-btn {
   white-space: nowrap;
 }
+/* Material Build-Up: section headings */
+
+.material-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.material-section-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #172033;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.material-section-heading h4 {
+  margin: 0;
+  font-size: 17px;
+  color: #172033;
+}
+
+.material-section-heading p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+/* Material Build-Up: Quantity Conversion */
+
+.material-conversion-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 18px;
+  align-items: start;
+}
+
+.material-conversion-section > .material-section-heading {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+}
+
+.material-conversion-section > .drawer-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  min-width: 0;
+}
+
+.material-conversion-section > .drawer-field > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.material-conversion-section > .drawer-field input,
+.material-conversion-section > .drawer-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.material-conversion-section > .drawer-field input:focus,
+.material-conversion-section > .drawer-field select:focus {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+
+@media (max-width: 850px) {
+  .material-conversion-section {
+    grid-template-columns: 1fr;
+  }
+}
+/* Material Build-Up: Quantity Conversion */
+
+.material-conversion-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 18px;
+  align-items: start;
+}
+
+.material-conversion-section > .material-section-heading {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+}
+
+.material-conversion-section > .drawer-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  min-width: 0;
+}
+
+.material-conversion-section > .drawer-field > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.material-conversion-section > .drawer-field input,
+.material-conversion-section > .drawer-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.material-conversion-section > .drawer-field input:focus,
+.material-conversion-section > .drawer-field select:focus {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+
+@media (max-width: 850px) {
+  .material-conversion-section {
+    grid-template-columns: 1fr;
+  }
+}
