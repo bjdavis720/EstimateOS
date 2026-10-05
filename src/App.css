@@ -1071,3 +1071,76 @@ button {
     grid-template-columns: 1fr;
   }
 }
+/* Material Build-Up: Cost Summary */
+
+.material-cost-summary {
+  margin-top: 4px;
+}
+
+.material-summary-primary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.material-summary-highlight {
+  padding: 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.material-summary-highlight span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.material-summary-highlight strong {
+  display: block;
+  color: #172033;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.material-summary-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #e2e8f0;
+}
+
+.material-summary-details > div {
+  padding: 14px 16px;
+  background: #fff;
+}
+
+.material-summary-details span {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.material-summary-details strong {
+  display: block;
+  color: #334155;
+  font-size: 15px;
+}
+
+@media (max-width: 850px) {
+  .material-summary-primary,
+  .material-summary-details {
+    grid-template-columns: 1fr;
+  }
+}
