@@ -1275,7 +1275,7 @@ const {
           <span>Total Material Cost</span>
           <strong>
             {formatCurrency(
-              selectedLine.materialTotal || 0
+              calculation.materialTotal || 0
             )}
           </strong>
         </div>
@@ -1308,6 +1308,44 @@ const {
           </strong>
         </div>
       </div>
+
+      <div className="material-summary-cost-breakdown">
+        <div>
+          <span>Base Material</span>
+          <strong>
+            {formatCurrency(
+              calculation.baseMaterial || 0
+            )}
+          </strong>
+        </div>
+
+        <div>
+          <span>Tax</span>
+          <strong>
+            {formatCurrency(
+              calculation.taxAmount || 0
+            )}
+          </strong>
+        </div>
+
+        <div>
+          <span>Markup</span>
+          <strong>
+            {formatCurrency(
+              calculation.markupAmount || 0
+            )}
+          </strong>
+        </div>
+
+        <div>
+          <span>Total Material Cost</span>
+          <strong>
+            {formatCurrency(
+              calculation.materialTotal || 0
+            )}
+          </strong>
+        </div>
+      </div>
     </>
   )}
 
@@ -1317,12 +1355,12 @@ const {
         <span>Total Material Cost</span>
         <strong>
           {formatCurrency(
-            selectedLine.materialTotal || 0
+            calculation.materialTotal || 0
           )}
         </strong>
       </div>
     </div>
-    )}
+  )}
 </div>
 </div>
 

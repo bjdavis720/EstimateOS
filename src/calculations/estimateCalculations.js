@@ -107,25 +107,32 @@ let netMaterialQuantity = 0;
   }
 
   const baseMaterial =
-    materialQuantity * unitCost;
+  materialQuantity * unitCost;
 
-  const materialWithTax =
-    baseMaterial *
-    (1 + taxPercent / 100);
+const taxAmount =
+  baseMaterial * (taxPercent / 100);
 
-  const materialTotal =
-    materialWithTax *
-    (1 + markupPercent / 100);
+const materialWithTax =
+  baseMaterial + taxAmount;
+
+const markupAmount =
+  materialWithTax * (markupPercent / 100);
+
+const materialTotal =
+  materialWithTax + markupAmount;
 
   return {
-    enteredConversion,
-    calculatedConversion,
-    conversionIsValid,
-    conversionError,
-    netMaterialQuantity,
-    materialQuantity,
-    materialTotal,
-  };
+  enteredConversion,
+  calculatedConversion,
+  conversionIsValid,
+  conversionError,
+  netMaterialQuantity,
+  materialQuantity,
+  baseMaterial,
+  taxAmount,
+  markupAmount,
+  materialTotal,
+};
 }
 
 export function calculateEquipmentBuildUpTotal(
