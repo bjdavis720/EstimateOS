@@ -1,6 +1,7 @@
-
 import { useState } from "react";
+
 import { createMaterial } from "../data/materialLibrary";
+
 import {
   MATERIAL_CONVERSION_TEMPLATES,
   createConversionFromTemplate,
@@ -71,45 +72,62 @@ function MaterialsPage({ materials, setMaterials }) {
         selectedMaterial.pricingLocation || "",
       pricingSource:
         selectedMaterial.pricingSource || "",
-        defaultConversion: selectedMaterial.defaultConversion
-  ? structuredClone(selectedMaterial.defaultConversion)
-  : null,
+      defaultConversion: selectedMaterial.defaultConversion
+        ? structuredClone(selectedMaterial.defaultConversion)
+        : null,
     });
+
     setError("");
   }
 
   function updateField(field, value) {
-  setForm((previous) => {
-    const updated = {
-      ...previous,
-      [field]: value,
-    };
+    setForm((previous) => {
+      const updated = {
+        ...previous,
+        [field]: value,
+      };
 
-    if (field === "conversionTemplateId") {
-      const conversion = value
-        ? createConversionFromTemplate(value)
-        : null;
+      if (field === "conversionTemplateId") {
+        const conversion = value
+          ? createConversionFromTemplate(value)
+          : null;
 
-      updated.defaultConversion = conversion;
+        updated.defaultConversion = conversion;
 
-      if (conversion) {
-        updated.purchaseUnit = conversion.outputUnit;
+        if (conversion) {
+          updated.purchaseUnit = conversion.outputUnit;
+        }
       }
-    }
 
-    return updated;
-  });
+      return updated;
+    });
 
-  setError("");
-}
+    setError("");
+  }
+
+  function updateConversionInput(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      defaultConversion: {
+        ...previous.defaultConversion,
+        inputs: {
+          ...previous.defaultConversion.inputs,
+          [field]: value,
+        },
+      },
+    }));
+
+    setError("");
+  }
 
   function saveMaterial(event) {
     event.preventDefault();
 
     const code = form.code.trim();
     const name = form.name.trim();
+    const purchaseUnit = form.purchaseUnit.trim();
 
-    if (!code || !name || !form.purchaseUnit.trim()) {
+    if (!code || !name || !purchaseUnit) {
       setError(
         "Code, material name and purchase unit are required."
       );
@@ -124,23 +142,93 @@ function MaterialsPage({ materials, setMaterials }) {
     );
 
     if (duplicate) {
-      setError("A material with this code already exists.");
+      setError(
+        "A material with this code already exists."
+      );
       return;
     }
 
-    const defaultConversion = form.defaultConversion
-  ? structuredClone(form.defaultConversion)
-  : null;
+    let defaultConversion = form.defaultConversion
+      ? structuredClone(form.defaultConversion)
+      : null;
 
-    
-     // A template's output unit must match the
-    // material's purchasing unit.
+    if (defaultConversion?.mode === "GUIDED") {
+      const thickness = Number(
+        defaultConversion.inputs?.thickness
+      );
+
+      if (
+        !Number.isFinite(thickness) ||
+        thickness <= 0
+      ) {
+        setError(
+          "Enter a valid default thickness for this material."
+        );
+        return;
+      }
+
+      defaultConversion = {
+        ...defaultConversion,
+        inputs: {
+          ...defaultConversion.inputs,
+          thickness,
+          thicknessUnit:
+            defaultConversion.inputs?.thicknessUnit ||
+            "IN",
+        },
+      };
+
+      if (
+        defaultConversion.method ===
+        "AREA_THICKNESS_DENSITY"
+      ) {
+        const density = Number(
+          defaultConversion.inputs?.density
+        );
+
+        if (
+          !Number.isFinite(density) ||
+          density <= 0
+        ) {
+          setError(
+            "Enter a valid default density for this material."
+          );
+          return;
+        }
+
+        defaultConversion = {
+          ...defaultConversion,
+          inputs: {
+            ...defaultConversion.inputs,
+            density,
+            densityUnit:
+              defaultConversion.inputs?.densityUnit ||
+              "TON/CY",
+          },
+        };
+      }
+    }
+
     if (
       defaultConversion &&
-      form.purchaseUnit !== defaultConversion.outputUnit
+      purchaseUnit !== defaultConversion.outputUnit
     ) {
       setError(
         "The purchase unit must match the selected conversion template."
+      );
+      return;
+    }
+
+    const referenceUnitCost = Number(
+      form.referenceUnitCost
+    );
+
+    if (
+      !Number.isFinite(referenceUnitCost) ||
+      referenceUnitCost < 0
+    ) {
+      setError(
+        "Enter a valid reference unit cost."
       );
       return;
     }
@@ -151,20 +239,10 @@ function MaterialsPage({ materials, setMaterials }) {
       name,
       category: form.category.trim(),
       description: form.description.trim(),
-      purchaseUnit: form.purchaseUnit.trim(),
-      referenceUnitCost: Number(
-        form.referenceUnitCost
-      ),
+      purchaseUnit,
+      referenceUnitCost,
       defaultConversion,
     };
-
-    if (
-      !Number.isFinite(changes.referenceUnitCost) ||
-      changes.referenceUnitCost < 0
-    ) {
-      setError("Enter a valid reference unit cost.");
-      return;
-    }
 
     if (selectedMaterial) {
       setMaterials((previous) =>
@@ -210,20 +288,20 @@ function MaterialsPage({ materials, setMaterials }) {
       </div>
 
       <div className="drawer-section materials-library-card">
-  <div className="materials-library-heading">
-    <div>
-      <h3>Library Materials</h3>
-      <p>
-        {filteredMaterials.length} of {materials.length}
-        {" "}materials
-      </p>
-    </div>
-  </div>
+        <div className="materials-library-heading">
+          <div>
+            <h3>Library Materials</h3>
+            <p>
+              {filteredMaterials.length} of {materials.length}{" "}
+              materials
+            </p>
+          </div>
+        </div>
 
         <input
           type="search"
           placeholder="Search by code, material, category or unit..."
-className="materials-library-search"
+          className="materials-library-search"
           value={search}
           onChange={(event) =>
             setSearch(event.target.value)
@@ -257,26 +335,28 @@ className="materials-library-search"
                   style={{ cursor: "pointer" }}
                 >
                   <td>{material.code}</td>
-<td>{material.name}</td>
-<td>{material.category}</td>
+                  <td>{material.name}</td>
+                  <td>{material.category}</td>
 
-<td>
-  <span className="materials-unit-badge">
-    {material.purchaseUnit}
-  </span>
-</td>
+                  <td>
+                    <span className="materials-unit-badge">
+                      {material.purchaseUnit}
+                    </span>
+                  </td>
 
-<td>
-  <span
-    className={
-      material.isActive
-        ? "materials-status active"
-        : "materials-status inactive"
-    }
-  >
-    {material.isActive ? "Active" : "Inactive"}
-  </span>
-</td>
+                  <td>
+                    <span
+                      className={
+                        material.isActive
+                          ? "materials-status active"
+                          : "materials-status inactive"
+                      }
+                    >
+                      {material.isActive
+                        ? "Active"
+                        : "Inactive"}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -329,7 +409,10 @@ className="materials-library-search"
             ).toFixed(2)}
           </p>
 
-          <button type="button" onClick={startEdit}>
+          <button
+            type="button"
+            onClick={startEdit}
+          >
             Edit Material
           </button>
         </div>
@@ -357,6 +440,7 @@ className="materials-library-search"
               className="drawer-field"
             >
               <span>{label}</span>
+
               <input
                 value={form[field]}
                 onChange={(event) =>
@@ -395,120 +479,112 @@ className="materials-library-search"
               )}
             </select>
           </label>
+
           {form.defaultConversion && (
-  <div className="drawer-section">
-    <h4>Default Conversion Settings</h4>
+            <div className="drawer-section">
+              <h4>Default Conversion Settings</h4>
 
-    <label className="drawer-field">
-      <span>Default Thickness</span>
-      <input
-        type="number"
-        min="0"
-        step="any"
-        value={
-          form.defaultConversion.inputs?.thickness ?? ""
-        }
-        onChange={(event) =>
-          setForm((previous) => ({
-            ...previous,
-            defaultConversion: {
-              ...previous.defaultConversion,
-              inputs: {
-                ...previous.defaultConversion.inputs,
-                thickness: event.target.value,
-              },
-            },
-          }))
-        }
-      />
-    </label>
+              <label className="drawer-field">
+                <span>Default Thickness</span>
 
-    <label className="drawer-field">
-      <span>Thickness Unit</span>
-      <select
-        value={
-          form.defaultConversion.inputs?.thicknessUnit ||
-          "IN"
-        }
-        onChange={(event) =>
-          setForm((previous) => ({
-            ...previous,
-            defaultConversion: {
-              ...previous.defaultConversion,
-              inputs: {
-                ...previous.defaultConversion.inputs,
-                thicknessUnit: event.target.value,
-              },
-            },
-          }))
-        }
-      >
-        <option value="IN">Inches</option>
-        <option value="FT">Feet</option>
-        <option value="MM">Millimeters</option>
-        <option value="M">Meters</option>
-      </select>
-    </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={
+                    form.defaultConversion.inputs
+                      ?.thickness ?? ""
+                  }
+                  onChange={(event) =>
+                    updateConversionInput(
+                      "thickness",
+                      event.target.value
+                    )
+                  }
+                />
+              </label>
 
-    {form.defaultConversion.method ===
-      "AREA_THICKNESS_DENSITY" && (
-      <>
-        <label className="drawer-field">
-          <span>Default Density</span>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            value={
-              form.defaultConversion.inputs?.density ?? ""
-            }
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                defaultConversion: {
-                  ...previous.defaultConversion,
-                  inputs: {
-                    ...previous.defaultConversion.inputs,
-                    density: event.target.value,
-                  },
-                },
-              }))
-            }
-          />
-        </label>
+              <label className="drawer-field">
+                <span>Thickness Unit</span>
 
-        <label className="drawer-field">
-          <span>Density Unit</span>
-          <select
-            value={
-              form.defaultConversion.inputs?.densityUnit ||
-              "TON/CY"
-            }
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                defaultConversion: {
-                  ...previous.defaultConversion,
-                  inputs: {
-                    ...previous.defaultConversion.inputs,
-                    densityUnit: event.target.value,
-                  },
-                },
-              }))
-            }
-          >
-            <option value="TON/CY">TON/CY</option>
-            <option value="LB/CF">LB/CF</option>
-            <option value="KG/CM">KG/CM</option>
-          </select>
-        </label>
-      </>
-    )}
-  </div>
-)}
+                <select
+                  value={
+                    form.defaultConversion.inputs
+                      ?.thicknessUnit || "IN"
+                  }
+                  onChange={(event) =>
+                    updateConversionInput(
+                      "thicknessUnit",
+                      event.target.value
+                    )
+                  }
+                >
+                  <option value="IN">Inches</option>
+                  <option value="FT">Feet</option>
+                  <option value="MM">
+                    Millimeters
+                  </option>
+                  <option value="M">Meters</option>
+                </select>
+              </label>
+
+              {form.defaultConversion.method ===
+                "AREA_THICKNESS_DENSITY" && (
+                <>
+                  <label className="drawer-field">
+                    <span>Default Density</span>
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={
+                        form.defaultConversion.inputs
+                          ?.density ?? ""
+                      }
+                      onChange={(event) =>
+                        updateConversionInput(
+                          "density",
+                          event.target.value
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label className="drawer-field">
+                    <span>Density Unit</span>
+
+                    <select
+                      value={
+                        form.defaultConversion.inputs
+                          ?.densityUnit || "TON/CY"
+                      }
+                      onChange={(event) =>
+                        updateConversionInput(
+                          "densityUnit",
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="TON/CY">
+                        TON/CY
+                      </option>
+                      <option value="LB/CF">
+                        LB/CF
+                      </option>
+                      <option value="KG/CM">
+                        KG/CM
+                      </option>
+                    </select>
+                  </label>
+                </>
+              )}
+            </div>
+          )}
 
           <label className="drawer-field">
             <span>Purchase Unit</span>
+
             <input
               value={form.purchaseUnit}
               onChange={(event) =>
@@ -522,6 +598,7 @@ className="materials-library-search"
 
           <label className="drawer-field">
             <span>Reference Unit Cost ($)</span>
+
             <input
               type="number"
               min="0"
@@ -538,6 +615,7 @@ className="materials-library-search"
 
           <label className="drawer-field">
             <span>Pricing Location</span>
+
             <input
               value={form.pricingLocation}
               onChange={(event) =>
@@ -551,6 +629,7 @@ className="materials-library-search"
 
           <label className="drawer-field">
             <span>Pricing Source</span>
+
             <input
               value={form.pricingSource}
               onChange={(event) =>
@@ -563,7 +642,10 @@ className="materials-library-search"
           </label>
 
           {error && (
-            <p role="alert" style={{ color: "crimson" }}>
+            <p
+              role="alert"
+              style={{ color: "crimson" }}
+            >
               {error}
             </p>
           )}
