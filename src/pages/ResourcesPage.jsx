@@ -61,8 +61,9 @@ function ResourcesPage({
           : "New Labor Resource",
 
       classification: "",
-      equipmentClass: "",
-      trade: "",
+costClassification: "",
+equipmentClass: "",
+trade: "",
 
       manufacturer: "",
       model: "",
@@ -437,7 +438,8 @@ function ResourcesPage({
               <th>Resource</th>
               <th>Type</th>
               <th>Classification</th>
-              <th>Trade</th>
+<th>Cost Classification</th>
+<th>Trade</th>
               <th>Unit</th>
               <th>Rate Records</th>
               <th>Status</th>
@@ -448,7 +450,7 @@ function ResourcesPage({
           <tbody>
             {filteredResources.length === 0 && (
               <tr>
-                <td colSpan="8">
+                <td colSpan="9">
                   <div className="empty-state">
                     <strong>No resources found.</strong>
                     <p>
@@ -482,12 +484,16 @@ function ResourcesPage({
                   <td>{resourceType}</td>
 
                   <td>
-                    {getResourceClassification(
-                      resource
-                    )}
-                  </td>
+  {getResourceClassification(
+    resource
+  )}
+</td>
 
-                  <td>{resource.trade || "-"}</td>
+<td>
+  {resource.costClassification || "-"}
+</td>
+
+<td>{resource.trade || "-"}</td>
 
                   <td>{resource.unit || "HR"}</td>
 
@@ -651,6 +657,28 @@ function ResourcesPage({
                     />
                   </label>
                 )}
+                <label className="drawer-field">
+  <span>Cost Classification</span>
+
+  <input
+    value={
+      selectedResource.costClassification ||
+      ""
+    }
+    placeholder={
+      selectedResource.resourceType === "Equipment"
+        ? "E1, E2..."
+        : "L1, L2, L9..."
+    }
+    onChange={(event) =>
+      updateResource(
+        selectedResource.id,
+        "costClassification",
+        event.target.value
+      )
+    }
+  />
+</label>
 
                 {selectedResource.resourceType ===
                   "Equipment" && (
@@ -890,16 +918,18 @@ function ResourcesPage({
                           <div className="rate-card-header">
                             <div>
                               <strong>
-                                {locationName}
-                              </strong>
+  {locationName}
+  {" | "}
+  {rate.effectiveDate || "No Effective Date"}
+</strong>
 
-                              <span>
-                                {isEquipment
-                                  ? selectedResource.ownership ||
-                                    "Equipment"
-                                  : rate.laborCondition ||
-                                    "Labor Condition"}
-                              </span>
+<span>
+  {isEquipment
+    ? selectedResource.ownership ||
+      "Equipment"
+    : rate.laborCondition ||
+      "Labor Condition"}
+</span>
                             </div>
 
                             <button
