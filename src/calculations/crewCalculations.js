@@ -78,7 +78,66 @@ export function calculateEquipmentResourceRate(
     (1 + markupPercent / 100)
   );
 }
+export function calculateEquipmentResourceBuildUp(
+  rate,
+  usageByUnit = {}
+) {
+  if (!rate) {
+    return {
+      components: [],
+      subtotal: 0,
+      markupPercent: 0,
+      markupAmount: 0,
+      total: 0,
+    };
+  }
 
+  const components = (
+    rate.equipmentCostComponents || []
+  ).map((component) => {
+    const unit = component.unit || "HR";
+
+    const amount = Number(
+      component.amount || 0
+    );
+
+    const usage = Number(
+      usageByUnit[unit] || 0
+    );
+
+    const extendedCost =
+      amount * usage;
+
+    return {
+      ...component,
+      unit,
+      amount,
+      usage,
+      extendedCost,
+    };
+  });
+
+  const subtotal = components.reduce(
+    (sum, component) =>
+      sum + component.extendedCost,
+    0
+  );
+
+  const markupPercent = Number(
+    rate.markupPercent || 0
+  );
+
+  const markupAmount =
+    subtotal * (markupPercent / 100);
+
+  return {
+    components,
+    subtotal,
+    markupPercent,
+    markupAmount,
+    total: subtotal + markupAmount,
+  };
+}
 export function getApplicableResourceRate(
   resource,
   rateContext

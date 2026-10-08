@@ -16,7 +16,8 @@ import ResourcesPage from "./pages/ResourcesPage";
 import MaterialsPage from "./pages/MaterialsPage";
 import CrewsPage from "./pages/CrewsPage";
 import {
-  calculateEquipmentResourceRate,
+  calculateEquipmentResourceBuildUp,
+calculateEquipmentResourceRate,
   calculateLaborResourceRate,
   getApplicableResourceRate,
 } from "./calculations/crewCalculations";
@@ -961,63 +962,87 @@ if (
     return updatedLines;
   });
 }
-function updateEquipmentBuildUp(
-  id,
-  field,
-  value
-) {
+function updateEquipmentBuildUp(id, field, value) {
   setEstimateLines((currentLines) => {
-    const updatedLines = currentLines.map(
-      (line) => {
-        if (line.id !== id) return line;
+    const updatedLines = currentLines.map((line) => {
+      if (line.id !== id) return line;
 
-        const updatedEquipmentBuildUp = {
-          ...(line.equipmentBuildUp || {}),
+      const updatedEquipmentBuildUp = {
+        ...(line.equipmentBuildUp || {}),
 
-          [field]:
-            field ===
-            "equipmentDescription"
-              ? value
-              : Number(value),
-        };
+        [field]: [
+          "equipmentDescription",
+          "resourceId",
+          "locationId",
+          "effectiveDate",
+          "usageByUnit",
+        ].includes(field)
+          ? value
+          : Number(value),
+      };
 
-        const directEquipmentTotal =
-          calculateEquipmentBuildUpTotal(
-            updatedEquipmentBuildUp
-          );
-
-        const crewEquipmentTotal = Number(
-          line.crewEquipmentTotal || 0
+      // Existing manual Equipment calculation.
+      const manualEquipmentTotal =
+        calculateEquipmentBuildUpTotal(
+          updatedEquipmentBuildUp
         );
 
-        return {
-          ...line,
+      // Locate the selected Equipment Resource.
+      const selectedResource = resources.find(
+        (resource) =>
+          resource.resourceType === "Equipment" &&
+          String(resource.id) ===
+            String(updatedEquipmentBuildUp.resourceId || "")
+      );
 
-          equipmentBuildUp: {
-            ...updatedEquipmentBuildUp,
-            calculatedTotal:
-              Math.round(
-                directEquipmentTotal
-              ),
-          },
+      // Find the applicable location/effective-dated rate.
+      const selectedRate = getApplicableResourceRate(
+        selectedResource,
+        {
+          locationId:
+            updatedEquipmentBuildUp.locationId || "",
+          effectiveDate:
+            updatedEquipmentBuildUp.effectiveDate || "",
+        }
+      );
 
-          equipmentTotal: Math.round(
-            directEquipmentTotal +
-              crewEquipmentTotal
-          ),
-        };
-      }
+      // Calculate Resource Equipment independently.
+      const resourceEquipmentTotal =
+        calculateEquipmentResourceBuildUp(
+          selectedRate,
+          updatedEquipmentBuildUp.usageByUnit || {}
+        ).total;
+
+      // Equipment already included in the selected Crew.
+      const crewEquipmentTotal = Number(
+        line.crewEquipmentTotal || 0
+      );
+
+      const directEquipmentTotal =
+        manualEquipmentTotal + resourceEquipmentTotal;
+
+      return {
+        ...line,
+
+        equipmentBuildUp: {
+          ...updatedEquipmentBuildUp,
+          manualEquipmentTotal,
+          resourceEquipmentTotal,
+          calculatedTotal: directEquipmentTotal,
+        },
+
+        equipmentTotal: Math.round(
+          directEquipmentTotal + crewEquipmentTotal
+        ),
+      };
+    });
+
+    const updatedSelectedLine = updatedLines.find(
+      (line) => line.id === id
     );
 
-    const updatedSelectedLine =
-      updatedLines.find(
-        (line) => line.id === id
-      );
-
     if (updatedSelectedLine) {
-      setSelectedLine(
-        updatedSelectedLine
-      );
+      setSelectedLine(updatedSelectedLine);
     }
 
     return updatedLines;

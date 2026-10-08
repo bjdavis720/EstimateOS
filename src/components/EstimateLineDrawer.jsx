@@ -3,6 +3,10 @@ import { getEstimateWorkspaceData } from "../calculations/estimateWorkspaceCalcu
 import {
   calculateMaterialBuildUpTotal,
 } from "../calculations/estimateCalculations";
+import {
+  calculateEquipmentResourceBuildUp,
+  getApplicableResourceRate,
+} from "../calculations/crewCalculations";
 
 function getMaterialOverrideStatus(material) {
   if (!material?.materialId) {
@@ -96,7 +100,36 @@ const {
   } = workspace;
 
 
+const equipmentBuildUp =
+  selectedLine.equipmentBuildUp || {};
 
+const selectedEquipmentResource =
+  resources.find(
+    (resource) =>
+      resource.resourceType === "Equipment" &&
+      String(resource.id) ===
+        String(equipmentBuildUp.resourceId || "")
+  ) || null;
+
+const equipmentRateContext = {
+  locationId: equipmentBuildUp.locationId || "",
+  effectiveDate:
+    equipmentBuildUp.effectiveDate || "",
+};
+
+const selectedEquipmentRate =
+  getApplicableResourceRate(
+    selectedEquipmentResource,
+    equipmentRateContext
+  );
+  const equipmentUsageByUnit =
+  equipmentBuildUp.usageByUnit || {};
+
+const equipmentResourceCalculation =
+  calculateEquipmentResourceBuildUp(
+    selectedEquipmentRate,
+    equipmentUsageByUnit
+  );
   const tabs = [
     "Classification",
     "Labor",
@@ -1374,7 +1407,237 @@ const {
           <h3>
             Additional Equipment Build-Up
           </h3>
+          {mode === "estimate" && (
+  <label className="drawer-field">
+    <span>Equipment Resource</span>
 
+    <select
+      className="table-select"
+      value={
+        selectedLine.equipmentBuildUp?.resourceId || ""
+      }
+      onChange={(event) =>
+        updateEquipmentBuildUp(
+          selectedLine.id,
+          "resourceId",
+          event.target.value
+        )
+      }
+    >
+      <option value="">
+        Select Equipment Resource
+      </option>
+
+      {resources
+        .filter(
+          (resource) =>
+            resource.resourceType === "Equipment" &&
+            resource.active !== false
+        )
+        .sort((a, b) =>
+          String(a.name || "").localeCompare(
+            String(b.name || "")
+          )
+        )
+        .map((resource) => (
+          <option
+            key={resource.id}
+            value={resource.id}
+          >
+            {resource.name}
+            {resource.costClassification
+              ? ` — ${resource.costClassification}`
+              : ""}
+          </option>
+        ))}
+    </select>
+  </label>
+)}
+{mode === "estimate" &&
+  selectedEquipmentResource && (
+    <>
+      <label className="drawer-field">
+        <span>Equipment Rate Location</span>
+
+        <select
+          className="table-select"
+          value={equipmentBuildUp.locationId || ""}
+          onChange={(event) =>
+            updateEquipmentBuildUp(
+              selectedLine.id,
+              "locationId",
+              event.target.value
+            )
+          }
+        >
+          <option value="">Select Rate Location</option>
+
+          {locations
+            .filter((location) =>
+              (selectedEquipmentResource.rates || []).some(
+                (rate) =>
+                  String(rate.locationId) ===
+                  String(location.id)
+              )
+            )
+            .map((location) => (
+              <option
+                key={location.id}
+                value={location.id}
+              >
+                {location.name}
+              </option>
+            ))}
+        </select>
+      </label>
+
+      <label className="drawer-field">
+        <span>Equipment Rate Effective Date</span>
+
+        <input
+          type="date"
+          value={equipmentBuildUp.effectiveDate || ""}
+          onChange={(event) =>
+            updateEquipmentBuildUp(
+              selectedLine.id,
+              "effectiveDate",
+              event.target.value
+            )
+          }
+        />
+      </label>
+
+      <div className="calc-summary">
+        <p>
+          <strong>Selected Rate:</strong>{" "}
+          {selectedEquipmentRate
+            ? `${
+                locations.find(
+                  (location) =>
+                    String(location.id) ===
+                    String(selectedEquipmentRate.locationId)
+                )?.name || "Unknown Location"
+              } | ${
+                selectedEquipmentRate.effectiveDate ||
+                "No Effective Date"
+              }`
+            : "No matching rate found"}
+        </p>
+            </div>
+
+      {selectedEquipmentRate && (
+        <div className="calc-summary">
+          <h4>Equipment Resource Cost Build-Up</h4>
+
+          <p>
+            Enter the equipment usage for this estimate.
+            Rates come from the selected Resource record.
+          </p>
+
+          {[
+            ...new Set(
+              (
+                selectedEquipmentRate.equipmentCostComponents ||
+                []
+              ).map((component) => component.unit || "HR")
+            ),
+          ].map((unit) => (
+            <label
+              className="drawer-field"
+              key={unit}
+            >
+              <span>Usage ({unit})</span>
+
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={equipmentUsageByUnit[unit] ?? 0}
+                onChange={(event) =>
+                  updateEquipmentBuildUp(
+                    selectedLine.id,
+                    "usageByUnit",
+                    {
+                      ...equipmentUsageByUnit,
+                      [unit]: Number(event.target.value),
+                    }
+                  )
+                }
+              />
+            </label>
+          ))}
+
+          <div className="table-wrap">
+            <table className="crew-members-table">
+              <thead>
+                <tr>
+                  <th>Cost Component</th>
+                  <th>Rate</th>
+                  <th>Usage</th>
+                  <th>Extended Cost</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {equipmentResourceCalculation.components.map(
+                  (component) => (
+                    <tr key={component.id}>
+                      <td>{component.description}</td>
+
+                      <td>
+                        {formatCurrency(component.amount)}
+                        /{component.unit}
+                      </td>
+
+                      <td>
+                        {component.usage} {component.unit}
+                      </td>
+
+                      <td>
+                        {formatCurrency(
+                          component.extendedCost
+                        )}
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            <strong>Subtotal:</strong>{" "}
+            {formatCurrency(
+              equipmentResourceCalculation.subtotal
+            )}
+          </p>
+
+          <p>
+            <strong>
+              Markup (
+              {equipmentResourceCalculation.markupPercent}
+              %):
+            </strong>{" "}
+            {formatCurrency(
+              equipmentResourceCalculation.markupAmount
+            )}
+          </p>
+
+          <p>
+            <strong>Resource Equipment Total:</strong>{" "}
+            {formatCurrency(
+              equipmentResourceCalculation.total
+            )}
+          </p>
+
+          <p>
+            Preview only.  This amount is not yet included
+            in the estimate total.
+          </p>
+        </div>
+      )}
+    </>
+  )}
           {mode === "estimate" &&
             Number(
               selectedLine.crewEquipmentTotal ||
